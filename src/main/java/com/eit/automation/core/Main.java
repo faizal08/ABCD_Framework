@@ -39,19 +39,16 @@ public class Main {
                 throw new RuntimeException("Test file not found: " + testFile.getAbsolutePath());
             }
 
-            // Initialize executor FIRST
-            executor = new TestExecutor(reportGenerator);
-
-            // Perform Login ONCE
-            // performInitialLogin(executor);
-
             // Detect file type and read accordingly
             if (testFilePath.toLowerCase().endsWith(".csv")) {
                 System.out.println("📄 Detected CSV file format");
+                // Initialize executor inside or pass it in - following your original style
+                executor = new TestExecutor(reportGenerator);
                 readCSVTestCases(testFilePath, executor, reportGenerator);
             } else if (testFilePath.toLowerCase().endsWith(".xlsx") || testFilePath.toLowerCase().endsWith(".xls")) {
                 System.out.println("📊 Detected Excel file format");
-                readExcelTestCases(testFilePath, executor, reportGenerator);
+                // We do not initialize here anymore because we need a fresh one per sheet
+                readExcelTestCases(testFilePath, reportGenerator);
             } else {
                 throw new RuntimeException("Unsupported file format. Please use .csv, .xlsx, or .xls files.");
             }
@@ -65,15 +62,14 @@ public class Main {
             if (executor != null) {
                 System.out.println("🛑 Closing browser...");
                 executor.close();
-                // System.out.println("✨ Browser remains open for inspection.");
             }
         }
     }
 
     /**
-     * Read test cases from Excel file
+     * Read test cases from Excel file - UPDATED TO HANDLE MULTIPLE SHEETS CORRECTLY
      */
-    private static void readExcelTestCases(String excelPath, TestExecutor executor, ReportGenerator reportGenerator)
+    private static void readExcelTestCases(String excelPath, ReportGenerator reportGenerator)
             throws Exception {
         String sheetName = config.getProperty("sheets.name");
         String[] sheetNames = null;
@@ -84,11 +80,16 @@ public class Main {
         }
 
         try (FileInputStream fis = new FileInputStream(excelPath);
-                Workbook workbook = new XSSFWorkbook(fis)) {
+             Workbook workbook = new XSSFWorkbook(fis)) {
 
             for (String rawSheetName : sheetNames) {
                 String sheetSingleName = rawSheetName.trim();
-                // List all sheets for debugging
+
+                // --- ADDED FIX: Initialize a NEW executor for every sheet ---
+                // This prevents "Invalid Session ID" when moving between sheets
+                if (executor != null) { executor.close(); }
+                executor = new TestExecutor(reportGenerator);
+
                 System.out.println("📚 Workbook contains sheets: ");
                 for (int k = 0; k < workbook.getNumberOfSheets(); k++) {
                     System.out.println("   - " + workbook.getSheetName(k));
@@ -144,6 +145,16 @@ public class Main {
                     String baseUrl = config.getProperty("base.url");
                     if (baseUrl != null && !baseUrl.isEmpty()) {
                         executor.getDriver().get(baseUrl);
+
+                        // --- ADDED FIX: Explicit wait to ensure the Login page is actually ready ---
+                        try {
+                            System.out.println("⏳ Waiting for login page to load fully...");
+                            executor.getWait().until(org.openqa.selenium.support.ui.ExpectedConditions
+                                    .visibilityOfElementLocated(org.openqa.selenium.By.xpath("//input[@placeholder='Enter your email']")));
+                            System.out.println("✅ Login page is ready.");
+                        } catch (Exception e) {
+                            System.err.println("⚠ Timeout: Login page elements not visible.");
+                        }
                     }
 
                     executeTestCase(testCaseName, stepBlock, executor, reportGenerator);
@@ -189,7 +200,7 @@ public class Main {
      * Execute a single test case
      */
     private static void executeTestCase(String testCaseName, String stepBlock, TestExecutor executor,
-            ReportGenerator reportGenerator) {
+                                        ReportGenerator reportGenerator) {
         System.out.println("\n=== 🧪 Running: " + testCaseName + " ===");
 
         // Parse steps
@@ -210,7 +221,6 @@ public class Main {
      * Perform initial login before test execution
      */
     private static void performInitialLogin(TestExecutor executor) {
-        // Log start of login process with a nice header
         System.out.println("\n╔════════════════════════════════════════════════════════════════════════════════╗");
         System.out.println("║                        PERFORMING INITIAL LOGIN                                ║");
         System.out.println("╚════════════════════════════════════════════════════════════════════════════════╝");
@@ -224,20 +234,14 @@ public class Main {
             System.out.println("→ Logging in as: " + username);
 
             if (url != null && !url.isEmpty()) {
-                // Navigate first
                 executor.getDriver().get(url);
-
-                // Then login
                 LoginPage loginPage = new LoginPage(executor.getDriver(), executor.getWait());
                 loginPage.login(username, password);
-
                 System.out.println("✓ Login credentials submitted");
             }
         } catch (Exception e) {
             System.err.println("❌ Initial login failed: " + e.getMessage());
             e.printStackTrace();
-            // We continue even if login fails, as some tests might not need it or might
-            // handle it themselves
         }
     }
 }
