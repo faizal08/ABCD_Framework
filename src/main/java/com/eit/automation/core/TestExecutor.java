@@ -218,11 +218,11 @@ public class TestExecutor {
 
 		log("  ⚙ Action: " + action.toUpperCase());
 
-		// HOTFIX: Override file upload path with user provided path
+		/*// HOTFIX: Override file upload path with user provided path
 		if ((action.equals("uploadfile") || action.equals("robotupload")) && value != null) {
 			log("  ⚠ HOTFIX: Overriding file path with 'C:\\Vehicle Image\\Auto.jpg'");
 			value = "C:\\Vehicle Image\\Auto.jpg";
-		}
+		}*/
 
 		// 1. PAGEFACTORY LOOKUP (If XPath is empty, try to match value/context to a
 		// Page Object field)
