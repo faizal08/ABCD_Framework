@@ -24,6 +24,8 @@ import com.eit.automation.actions.VerificationActions;
 import com.eit.automation.actions.WaitActions;
 import com.eit.automation.parser.TestStep;
 import com.eit.automation.utils.ReportGenerator;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TestExecutor {
 
@@ -61,13 +63,26 @@ public class TestExecutor {
 		log("╚════════════════════════════════════════════════════════════════════════════════╝");
 
 		ChromeOptions options = new ChromeOptions();
+
+		// --- NEW: Disable Password Manager & Data Breach Popups ---
+		Map<String, Object> prefs = new HashMap<>();
+		prefs.put("credentials_enable_service", false); // Disables the "Save Password" prompt
+		prefs.put("profile.password_manager_enabled", false); // Disables password manager entirely
+		prefs.put("autofill.profile_enabled", false); // Disables address/form autofill
+		prefs.put("profile.password_manager_leak_detection", false); // Disables the "Data Breach" popup
+		options.setExperimentalOption("prefs", prefs);
+
+		// --- Standard Arguments ---
 		options.addArguments("--start-maximized");
 		options.addArguments("--disable-notifications");
+		options.addArguments("--disable-features=SafeBrowsingPasswordCheck"); // Specifically targets the breach popup
 		options.setExperimentalOption("detach", true); // Keep browser open
+		options.setExperimentalOption("excludeSwitches", new String[]{"enable-automation"}); // Hides "Chrome is being controlled" bar
 
 		log("→ Creating ChromeDriver");
 		log("  • Start maximized: Yes");
 		log("  • Disable notifications: Yes");
+		log("  • Disable Password Manager: Yes"); // Added for logging
 		this.driver = new ChromeDriver(options);
 
 		this.wait = new WebDriverWait(driver, Duration.ofSeconds(30));
