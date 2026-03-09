@@ -62,6 +62,9 @@ public class TestExecutor {
 		log("║                        INITIALIZING TEST EXECUTOR                              ║");
 		log("╚════════════════════════════════════════════════════════════════════════════════╝");
 
+		io.github.bonigarcia.wdm.WebDriverManager.chromedriver().setup();
+		log("→ WebDriverManager: Checked and updated ChromeDriver to match Chrome browser");
+
 		ChromeOptions options = new ChromeOptions();
 
 		// --- NEW: Disable Password Manager & Data Breach Popups ---
