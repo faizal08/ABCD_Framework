@@ -133,8 +133,7 @@ public class Main {
                                 match = true;
                                 break;
                             }
-                        }
-                        if (!match) {
+                        }                        if (!match) {
                             continue; // Skip if no match found
                         }
                     }
