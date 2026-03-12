@@ -8,11 +8,15 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.openqa.selenium.By;
+import java.util.HashMap;
+import java.util.Map;
 
 public class StepParser {
 
 	// Logging configuration
 	private static boolean detailedLogging = false; // Reduced verbosity
+
+	private static Map<String, String> savedValues = new HashMap<>();
 	private static DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
 	// Initializing Regex Patterns
@@ -266,6 +270,8 @@ public class StepParser {
 
 				// Create step immediately if valid
 				if (!action.isEmpty()) {
+					value = processPlaceholders(value); // <--- Ensure this is here
+					xpath = processPlaceholders(xpath);
 					TestStep step = new TestStep(lineNumber, action, value, xpath);
 					step.setOriginalSentence(originalLine);
 					if (!context.isEmpty()) {
@@ -342,7 +348,8 @@ public class StepParser {
 					// Handle Quotes in Value/XPath if present (Excel sometimes adds them?)
 					value = value.replaceAll("^\"|\"$", "").replace("\"\"", "\"");
 					xpath = xpath.replaceAll("^\"|\"$", "").replace("\"\"", "\"");
-
+					value = processPlaceholders(value); // <--- Ensure this is here
+					xpath = processPlaceholders(xpath);
 					TestStep step = new TestStep(lineNumber, bestAction, value, xpath);
 					step.setOriginalSentence(originalLine);
 					if (!context.isEmpty()) {
@@ -429,6 +436,8 @@ public class StepParser {
 				continue;
 			}
 
+			value = processPlaceholders(value); // <--- Ensure this is here
+			xpath = processPlaceholders(xpath);
 			// Create test step
 			TestStep step = new TestStep(lineNumber, action, value, xpath);
 			step.setOriginalSentence(originalLine); // ✅ Save original sentence
@@ -660,5 +669,55 @@ public class StepParser {
 		if (enabled) {
 			logInfo("Detailed logging enabled");
 		}
+	}
+	/**
+	 * Helper method to process dynamic placeholders like {timestamp} and {randomPhone}
+	 */
+	private static String processPlaceholders(String value) {
+		if (value == null || value.isEmpty()) return value;
+
+		// --- NEW: SAVE LOGIC ---
+		// If value contains ">>", it means: "Generate and Save"
+		// Example: "zeo_{timestamp} >> savedName"
+		if (value.contains(">>")) {
+			String[] parts = value.split(">>");
+			String template = parts[0].trim();
+			String variableName = parts[1].trim();
+
+			// Generate the random value
+			String generatedValue = template;
+			if (generatedValue.contains("{timestamp}")) {
+				generatedValue = generatedValue.replace("{timestamp}", LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddHHmmss")));
+			}
+			if (generatedValue.contains("{randomPhone}")) {
+				long firstDigit = (long) (Math.random() * 3) + 7;
+				long remainingNine = (long) (Math.floor(Math.random() * 900_000_000L) + 100_000_000L);
+				generatedValue = String.valueOf(firstDigit) + String.valueOf(remainingNine);
+			}
+
+			// Save it to memory and return the result
+			savedValues.put(variableName, generatedValue);
+			return generatedValue;
+		}
+
+		// --- NEW: REUSE LOGIC ---
+		// Check if the value is a saved variable name (e.g., "{savedName}")
+		for (String key : savedValues.keySet()) {
+			if (value.contains("{" + key + "}")) {
+				return value.replace("{" + key + "}", savedValues.get(key));
+			}
+		}
+
+		// Standard placeholder logic (for one-time use)
+		if (value.contains("{timestamp}")) {
+			value = value.replace("{timestamp}", LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddHHmmss")));
+		}
+		if (value.contains("{randomPhone}")) {
+			long firstDigit = (long) (Math.random() * 3) + 7;
+			long remainingNine = (long) (Math.floor(Math.random() * 900_000_000L) + 100_000_000L);
+			value = String.valueOf(firstDigit) + String.valueOf(remainingNine);
+		}
+
+		return value;
 	}
 }
