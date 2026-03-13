@@ -69,99 +69,72 @@ public class Main {
     /**
      * Read test cases from Excel file - UPDATED TO HANDLE MULTIPLE SHEETS CORRECTLY
      */
-    private static void readExcelTestCases(String excelPath, ReportGenerator reportGenerator)
-            throws Exception {
+    private static void readExcelTestCases(String excelPath, ReportGenerator reportGenerator) throws Exception {
         String sheetName = config.getProperty("sheets.name");
-        String[] sheetNames = null;
-        if (sheetName != null && !sheetName.isEmpty()) {
-            sheetNames = sheetName.split(",");
-        } else {
-            throw new RuntimeException("sheets.name property is required for Excel files");
-        }
+        String[] sheetNames = (sheetName != null) ? sheetName.split(",") : new String[0];
 
         try (FileInputStream fis = new FileInputStream(excelPath);
              Workbook workbook = new XSSFWorkbook(fis)) {
 
+            if (executor == null) {
+                executor = new TestExecutor(reportGenerator);
+            }
+
+            boolean isBrowserStarted = false;
+
             for (String rawSheetName : sheetNames) {
                 String sheetSingleName = rawSheetName.trim();
-
-                // --- ADDED FIX: Initialize a NEW executor for every sheet ---
-                // This prevents "Invalid Session ID" when moving between sheets
-                if (executor != null) { executor.close(); }
-                executor = new TestExecutor(reportGenerator);
-
-                System.out.println("📚 Workbook contains sheets: ");
-                for (int k = 0; k < workbook.getNumberOfSheets(); k++) {
-                    System.out.println("   - " + workbook.getSheetName(k));
-                }
-
                 Sheet sheet = workbook.getSheet(sheetSingleName);
                 if (sheet == null) {
-                    System.err.println("⚠ Warning: Sheet '" + sheetSingleName + "' not found in workbook!");
+                    System.err.println("⚠️ Warning: Sheet '" + sheetSingleName + "' not found!");
                     continue;
                 }
 
-                System.out.println("✅ Found Sheet: '" + sheetSingleName + "' with " + sheet.getLastRowNum() + " rows.");
-
-                // Execute each test case
                 for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                    System.out.println("   ➡ Checking Row " + i);
                     Row row = sheet.getRow(i);
-                    if (row == null) {
-                        System.out.println("   ⚠ Row " + i + " is null");
-                        continue;
-                    }
+                    if (row == null) continue;
 
-                    Cell testCaseCell = row.getCell(2); // Column C
-                    Cell stepBlockCell = row.getCell(4); // Column E
-
-                    if (testCaseCell == null || stepBlockCell == null)
-                        continue;
+                    Cell testCaseCell = row.getCell(2);
+                    Cell stepBlockCell = row.getCell(4);
+                    if (testCaseCell == null || stepBlockCell == null) continue;
 
                     String testCaseName = testCaseCell.getStringCellValue().trim();
                     String stepBlock = stepBlockCell.getStringCellValue().trim();
 
-                    System.out.println("🔎 Found Test Case in Excel: " + testCaseName);
-
-                    // Check for filter
+                    // Apply Filter Logic
                     String filterName = config.getProperty("filter.name");
-                    boolean match = false;
                     if (filterName != null && !filterName.isEmpty()) {
-                        String[] filters = filterName.split(",");
-                        for (String f : filters) {
-                            if (testCaseName.toLowerCase().contains(f.trim().toLowerCase())) {
-                                match = true;
-                                break;
-                            }
-                        }                        if (!match) {
-                            continue; // Skip if no match found
+                        if (!testCaseName.toLowerCase().contains(filterName.toLowerCase().trim())) {
+                            continue;
                         }
                     }
 
-                    // Reset state before test case
-                    System.out.println("🧹 Resetting browser state...");
-                    executor.getDriver().manage().deleteAllCookies();
-                    String baseUrl = config.getProperty("base.url");
-                    if (baseUrl != null && !baseUrl.isEmpty()) {
-                        executor.getDriver().get(baseUrl);
+                    // 1. NAVIGATION LOGIC
+                    if (!isBrowserStarted) {
+                        // Navigate to Login for the very first test case
+                        executor.getDriver().get(config.getProperty("base.url"));
+                        isBrowserStarted = true;
+                    } else {
+                        // Navigate to Dashboard for subsequent tests to clear the previous page
+                        System.out.println("🔄 Navigating to Dashboard for: " + testCaseName);
 
-                        // --- ADDED FIX: Explicit wait to ensure the Login page is actually ready ---
-                        try {
-                            System.out.println("⏳ Waiting for login page to load fully...");
-                            executor.getWait().until(org.openqa.selenium.support.ui.ExpectedConditions
-                                    .visibilityOfElementLocated(org.openqa.selenium.By.xpath("//input[@placeholder='Enter your email']")));
-                            System.out.println("✅ Login page is ready.");
-                        } catch (Exception e) {
-                            System.err.println("⚠ Timeout: Login page elements not visible.");
+                        String dashboardUrl = config.getProperty("dashboard.url");
+                        if (dashboardUrl != null && !dashboardUrl.isEmpty()) {
+                            executor.getDriver().get(dashboardUrl);
+                        } else {
+                            System.err.println("❌ Error: 'dashboard.url' not found in config.properties!");
                         }
+
+                        // Small wait to allow the Dashboard page to load naturally
+                        try { Thread.sleep(1500); } catch (Exception ignored) {}
                     }
 
+                    // Execute the test steps (Success messages and popups will NOT be deleted now)
                     executeTestCase(testCaseName, stepBlock, executor, reportGenerator);
                 }
             }
         }
     }
-
     /**
      * Read test cases from CSV file
      */
