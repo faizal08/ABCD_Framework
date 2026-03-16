@@ -28,6 +28,9 @@ public class Main {
             FileInputStream configFis = new FileInputStream("config.properties");
             config.load(configFis);
 
+            String excelName = config.getProperty("excel.name", "Default_Test.xlsx");
+            reportGenerator.setExcelFileName(excelName);
+
             reportGenerator.startTestExecution();
 
             // Determine test file path

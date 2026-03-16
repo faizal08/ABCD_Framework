@@ -1,6 +1,7 @@
 package com.eit.automation.utils;
 
 import com.eit.automation.parser.TestStep;
+import lombok.Setter;
 import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
@@ -33,6 +34,9 @@ public class ReportGenerator {
 	private int totalTests = 0;
 	private int passedTests = 0;
 	private int failedTests = 0;
+
+	@Setter
+	private String excelFileName = "Unknown File";
 
 	private List<TestCaseResult> testResults;
 	private TestCaseResult currentTestCase;
@@ -302,7 +306,7 @@ public class ReportGenerator {
 	 */
 	private void writeTestCaseResults(FileWriter writer) throws IOException {
 		writer.write("        <div class='test-cases'>\n");
-		writer.write("            <h2>🧪 Test Cases (" + testResults.size() + " / " + totalTests + ")</h2>\n");
+		writer.write("            <h2>🧪 Test Cases (" + excelFileName + ") (" + testResults.size() + " / " + totalTests + ")</h2>\n");
 
 		for (int i = 0; i < testResults.size(); i++) {
 			TestCaseResult tcr = testResults.get(i);
