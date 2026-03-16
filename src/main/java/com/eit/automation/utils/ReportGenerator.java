@@ -247,60 +247,78 @@ public class ReportGenerator {
 	 * Write execution summary
 	 */
 	private void writeExecutionSummary(FileWriter writer) throws IOException {
+		// Standard professional formats
+		SimpleDateFormat datePart = new SimpleDateFormat("dd MMM yyyy");
+		SimpleDateFormat timePart = new SimpleDateFormat("hh:mm:ss a");
+
 		long duration = 0;
 		if (endTime != null) {
 			duration = (endTime.getTime() - startTime.getTime()) / 1000;
 		} else if (startTime != null) {
-			duration = (new Date().getTime() - startTime.getTime()) / 1000;
+			duration = (new java.util.Date().getTime() - startTime.getTime()) / 1000;
 		}
 
 		double successRate = totalTests > 0 ? (passedTests * 100.0 / totalTests) : 0;
 
 		writer.write("        <div class='summary'>\n");
-		writer.write("            <h2>📊 Execution Summary</h2>\n");
-		writer.write("            <div class='summary-grid'>\n");
-		writer.write("                <div class='summary-item'>\n");
+		writer.write("            <h2 style='margin-bottom: 20px;'>📊 Execution Summary</h2>\n");
+		// We use a flex container for the grid to keep everything in one line
+		writer.write("            <div class='summary-grid' style='display: flex; flex-wrap: nowrap; gap: 10px; justify-content: space-between;'>\n");
+
+		// START TIME
+		writer.write("                <div class='summary-item' style='flex: 1; min-width: 0;'>\n");
 		writer.write("                    <div class='summary-label'>Start Time</div>\n");
-		writer.write("                    <div class='summary-value'>" + dateFormat.format(startTime) + "</div>\n");
+		writer.write("                    <div class='summary-value' style='white-space: nowrap; font-size: 0.95rem;'>" + datePart.format(startTime) + "</div>\n");
+		writer.write("                    <div class='time-subtext' style='white-space: nowrap; font-size: 0.8rem;'>" + timePart.format(startTime) + "</div>\n");
 		writer.write("                </div>\n");
 
+		// END TIME / STATUS
 		if (endTime != null) {
-			writer.write("                <div class='summary-item'>\n");
+			writer.write("                <div class='summary-item' style='flex: 1; min-width: 0;'>\n");
 			writer.write("                    <div class='summary-label'>End Time</div>\n");
-			writer.write("                    <div class='summary-value'>" + dateFormat.format(endTime) + "</div>\n");
+			writer.write("                    <div class='summary-value' style='white-space: nowrap; font-size: 0.95rem;'>" + datePart.format(endTime) + "</div>\n");
+			writer.write("                    <div class='time-subtext' style='white-space: nowrap; font-size: 0.8rem;'>" + timePart.format(endTime) + "</div>\n");
 			writer.write("                </div>\n");
 		} else {
-			writer.write("                <div class='summary-item running'>\n");
+			writer.write("                <div class='summary-item running' style='flex: 1;'>\n");
 			writer.write("                    <div class='summary-label'>Status</div>\n");
-			writer.write("                    <div class='summary-value'>⏳ Running...</div>\n");
+			writer.write("                    <div class='summary-value'>⏳ Running</div>\n");
 			writer.write("                </div>\n");
 		}
 
-		writer.write("                <div class='summary-item'>\n");
+		// DURATION
+		writer.write("                <div class='summary-item' style='flex: 0.7;'>\n");
 		writer.write("                    <div class='summary-label'>Duration</div>\n");
 		writer.write("                    <div class='summary-value'>" + formatDuration(duration) + "</div>\n");
 		writer.write("                </div>\n");
-		writer.write("                <div class='summary-item'>\n");
-		writer.write("                    <div class='summary-label'>Total Tests</div>\n");
+
+		// TOTAL
+		writer.write("                <div class='summary-item' style='flex: 0.6;'>\n");
+		writer.write("                    <div class='summary-label'>Total</div>\n");
 		writer.write("                    <div class='summary-value'>" + totalTests + "</div>\n");
 		writer.write("                </div>\n");
-		writer.write("                <div class='summary-item passed'>\n");
+
+		// PASSED
+		writer.write("                <div class='summary-item passed' style='flex: 0.6;'>\n");
 		writer.write("                    <div class='summary-label'>Passed</div>\n");
 		writer.write("                    <div class='summary-value'>" + passedTests + "</div>\n");
 		writer.write("                </div>\n");
-		writer.write("                <div class='summary-item failed'>\n");
+
+		// FAILED
+		writer.write("                <div class='summary-item failed' style='flex: 0.6;'>\n");
 		writer.write("                    <div class='summary-label'>Failed</div>\n");
 		writer.write("                    <div class='summary-value'>" + failedTests + "</div>\n");
 		writer.write("                </div>\n");
-		writer.write("                <div class='summary-item'>\n");
-		writer.write("                    <div class='summary-label'>Success Rate</div>\n");
-		writer.write(
-				"                    <div class='summary-value'>" + String.format("%.2f%%", successRate) + "</div>\n");
+
+		// SUCCESS RATE
+		writer.write("                <div class='summary-item' style='flex: 1;'>\n");
+		writer.write("                    <div class='summary-label'>Success</div>\n");
+		writer.write("                    <div class='summary-value' style='color: " + (successRate == 100 ? "#28a745" : "#dc3545") + "; white-space: nowrap;'>" + String.format("%.2f%%", successRate) + "</div>\n");
 		writer.write("                </div>\n");
+
 		writer.write("            </div>\n");
 		writer.write("        </div>\n");
 	}
-
 	/**
 	 * Write test case results
 	 */
@@ -492,20 +510,20 @@ public class ReportGenerator {
 				    }
 
 				    .summary-grid {
-				        display: grid;
-				        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-				        gap: 15px;
-				        margin-top: 20px;
+				        display: flex;
+				        flex-direction: row; /* Force one row */
+				        align-items: stretch;
+				        width: 100%;
 				    }
 
-				    .summary-item {
-				        background: white;
-				        padding: 20px;
-				        border-radius: 8px;
-				        text-align: center;
-				        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-				        transition: transform 0.3s;
-				    }
+				  .summary-item {
+				      background: #fff;
+				      padding: 10px 5px; /* Reduced padding to fit more items */
+				      border-radius: 6px;
+				      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+				      text-align: center;
+				      border: 1px solid #eee;
+				  }
 
 				    .summary-item:hover {
 				        transform: translateY(-5px);
@@ -532,11 +550,17 @@ public class ReportGenerator {
 				        text-transform: uppercase;
 				    }
 
-				    .summary-value {
-				        font-size: 1.8em;
-				        font-weight: bold;
-				        color: #333;
-				    }
+				   .summary-value {
+				       display: block;
+				       font-weight: 700;
+				       white-space: nowrap; /* CRITICAL: Prevents date/time/success from wrapping */
+				       overflow: hidden;
+				   }
+				   
+				   .time-subtext {
+				       color: #888;
+				       margin-top: 2px;
+				   }
 
 				    .test-cases {
 				        margin-top: 30px;
