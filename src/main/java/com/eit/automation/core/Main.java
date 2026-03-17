@@ -123,8 +123,7 @@ public class Main {
 
                         String dashboardUrl = config.getProperty("dashboard.url");
                         if (dashboardUrl != null && !dashboardUrl.isEmpty()) {
-                            executor.getDriver().get(dashboardUrl);
-                        } else {
+                            executor.getDriver().get(dashboardUrl);                        } else {
                             System.err.println("❌ Error: 'dashboard.url' not found in config.properties!");
                         }
 
