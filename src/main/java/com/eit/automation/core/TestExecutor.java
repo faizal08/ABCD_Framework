@@ -340,8 +340,37 @@ public class TestExecutor {
 					log("  → Value: "
 							+ (value != null && value.length() > 60 ? value.substring(0, 60) + "..." : value));
 				}
-				inputActions.typeText(xpath, value);
-				log("  ✓ Text entered");
+
+				// --- START OF CODE for navigation in google map synced box in store up,down,enter,tab key navigation---
+				if (value != null && value.startsWith("\\ue")) {
+					WebElement element = driver.findElement(By.xpath(xpath));
+
+					switch (value) {
+						case "\\ue015": // Arrow Down
+							element.sendKeys(org.openqa.selenium.Keys.ARROW_DOWN);
+							log("  ✓ Key Sent: ARROW_DOWN");
+							break;
+						case "\\ue013": // Arrow Up
+							element.sendKeys(org.openqa.selenium.Keys.ARROW_UP);
+							log("  ✓ Key Sent: ARROW_UP");
+							break;
+						case "\\ue007": // Enter
+							element.sendKeys(org.openqa.selenium.Keys.ENTER);
+							log("  ✓ Key Sent: ENTER");
+							break;
+						case "\\ue004": // Tab
+							element.sendKeys(org.openqa.selenium.Keys.TAB);
+							log("  ✓ Key Sent: TAB");
+							break;
+						default:
+							element.sendKeys(value); // Fallback if code isn't recognized
+					}
+				} else {
+					// Normal text entry
+					inputActions.typeText(xpath, value);
+					log("  ✓ Text entered");
+				}
+				// --- END OF SUGGESTED CODE ---
 				break;
 
 			case "clear":
