@@ -341,42 +341,38 @@ public class TestExecutor {
 							+ (value != null && value.length() > 60 ? value.substring(0, 60) + "..." : value));
 				}
 
-				// --- START OF CODE for navigation in google map synced box in store up,down,enter,tab key navigation---
-				if (value != null && value.startsWith("\\ue")) {
-					WebElement element = driver.findElement(By.xpath(xpath));
-
-					switch (value) {
-						case "\\ue015": // Arrow Down
-							element.sendKeys(org.openqa.selenium.Keys.ARROW_DOWN);
-							log("  ✓ Key Sent: ARROW_DOWN");
-							break;
-						case "\\ue013": // Arrow Up
-							element.sendKeys(org.openqa.selenium.Keys.ARROW_UP);
-							log("  ✓ Key Sent: ARROW_UP");
-							break;
-						case "\\ue007": // Enter
-							element.sendKeys(org.openqa.selenium.Keys.ENTER);
-							log("  ✓ Key Sent: ENTER");
-							break;
-						case "\\ue004": // Tab
-							element.sendKeys(org.openqa.selenium.Keys.TAB);
-							log("  ✓ Key Sent: TAB");
-							break;
-						default:
-							element.sendKeys(value); // Fallback if code isn't recognized
-					}
-				} else {
-					// Normal text entry
-					inputActions.typeText(xpath, value);
-					log("  ✓ Text entered");
-				}
-				// --- END OF SUGGESTED CODE ---
+				inputActions.typeText(xpath, value);
+				log("  ✓ Text entered");
 				break;
 
 			case "clear":
 				log("  → XPath: " + xpath);
 				inputActions.clearField(xpath);
 				log("  ✓ Field cleared");
+				break;
+
+			case "arrow_down":
+				log("  → XPath: " + xpath);
+				driver.findElement(By.xpath(xpath)).sendKeys(org.openqa.selenium.Keys.ARROW_DOWN);
+				log("  ✓ Sent Key: ARROW_DOWN");
+				break;
+
+			case "arrow_up":
+				log("  → XPath: " + xpath);
+				driver.findElement(By.xpath(xpath)).sendKeys(org.openqa.selenium.Keys.ARROW_UP);
+				log("  ✓ Sent Key: ARROW_UP");
+				break;
+
+			case "press_enter":
+				log("  → XPath: " + xpath);
+				driver.findElement(By.xpath(xpath)).sendKeys(org.openqa.selenium.Keys.ENTER);
+				log("  ✓ Sent Key: ENTER");
+				break;
+
+			case "tab":
+				log("  → XPath: " + xpath);
+				driver.findElement(By.xpath(xpath)).sendKeys(org.openqa.selenium.Keys.TAB);
+				log("  ✓ Sent Key: TAB");
 				break;
 
 			case "uploadfile":

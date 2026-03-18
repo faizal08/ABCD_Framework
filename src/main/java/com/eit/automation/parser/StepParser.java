@@ -52,6 +52,13 @@ public class StepParser {
 		// 3. SPECIFIC INTERACTIONS (Select, Type take precedence over Click)
 		// ========================================
 
+		// --- NEW KEYBOARD PATTERNS ---
+		ACTION_PATTERNS.add(new StepPattern(".*\\b(arrow_down|arrow-down)\\b.*", "arrow_down"));
+		ACTION_PATTERNS.add(new StepPattern(".*\\b(arrow_up|arrow-up)\\b.*", "arrow_up"));
+		ACTION_PATTERNS.add(new StepPattern(".*\\b(press_enter|enter_key)\\b.*", "press_enter"));
+		ACTION_PATTERNS.add(new StepPattern(".*\\b(tab_key|tab)\\b.*", "tab"));
+		// --------------------------------------------
+
 		// Clear Field (NEW)
 		ACTION_PATTERNS.add(new StepPattern(".*\\b(clear|empty|remove)\\s+(text|field|value|content)\\b.*", "clear"));
 		ACTION_PATTERNS.add(new StepPattern(".*\\bclear\\b.*", "clear"));
