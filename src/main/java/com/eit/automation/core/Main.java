@@ -133,7 +133,7 @@ public class Main {
                     }
 
                     // Execute the test steps (Success messages and popups will NOT be deleted now)
-                    executeTestCase(testCaseName, stepBlock, executor, reportGenerator);
+                    executeTestCase(sheetSingleName,testCaseName, stepBlock, executor, reportGenerator);
                 }
             }
         }
@@ -167,14 +167,14 @@ public class Main {
                 }
             }
 
-            executeTestCase(testCaseName, stepBlock, executor, reportGenerator);
+            executeTestCase("CSV_Data",testCaseName, stepBlock, executor, reportGenerator);
         }
     }
 
     /**
      * Execute a single test case
      */
-    private static void executeTestCase(String testCaseName, String stepBlock, TestExecutor executor,
+    private static void executeTestCase(String sheetName, String testCaseName, String stepBlock, TestExecutor executor,
                                         ReportGenerator reportGenerator) {
         System.out.println("\n=== 🧪 Running: " + testCaseName + " ===");
 
@@ -189,7 +189,7 @@ public class Main {
         }
 
         // Execute test
-        executor.run(steps, testCaseName);
+        executor.run(sheetName, steps, testCaseName);
     }
 
     /**

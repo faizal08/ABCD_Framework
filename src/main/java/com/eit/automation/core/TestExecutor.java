@@ -114,7 +114,7 @@ public class TestExecutor {
 	/**
 	 * Execute list of test steps - CONTINUES ON ERROR, DOESN'T CLOSE BROWSER
 	 */
-	public boolean run(List<TestStep> steps, String testCaseName) {
+	public boolean run(String sheetName,List<TestStep> steps, String testCaseName) {
 		long testStartTime = System.currentTimeMillis();
 
 		// Reset counters
@@ -139,6 +139,8 @@ public class TestExecutor {
 			for (int i = 0; i < steps.size(); i++) {
 				TestStep step = steps.get(i);
 				int stepNumber = i + 1;
+
+				updateBrowserOverlay(sheetName, testCaseName, stepNumber, step);
 
 				logStepHeader(stepNumber, steps.size(), step);
 
@@ -222,9 +224,8 @@ public class TestExecutor {
 	 * Execute list of test steps WITHOUT test case name
 	 */
 	public boolean run(List<TestStep> steps) {
-		return run(steps, "Unnamed Test Case");
+		return run("Default", steps, "Unnamed Test Case"); // Added "Default" as the first argument
 	}
-
 	/**
 	 * Execute single test step - NEVER THROWS, JUST LOGS ERRORS
 	 */
@@ -846,6 +847,50 @@ public class TestExecutor {
 			return String.format("%dm %ds %dms", minutes, seconds, ms);
 		} else {
 			return String.format("%ds %dms", seconds, ms);
+		}
+	}
+
+	private void updateBrowserOverlay(String sheet, String test, int stepNum, TestStep step) {
+		try {
+			if (driver == null) return;
+			org.openqa.selenium.JavascriptExecutor js = (org.openqa.selenium.JavascriptExecutor) driver;
+
+			String action = step.getAction().toUpperCase();
+			String detail = (step.getValue() != null && !step.getValue().isEmpty()) ? step.getValue() :
+					(step.getXpath() != null ? step.getXpath() : "");
+
+			String script =
+					"var overlay = document.getElementById('automation-overlay');" +
+							"if(!overlay) {" +
+							"  document.body.style.marginTop = '50px';" +
+							"  overlay = document.createElement('div');" +
+							"  overlay.id = 'automation-overlay';" +
+							"  " +
+							"  /* CHANGE COLORS BELOW: color is text, border-bottom is the line */ " +
+							"  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:50px; " +
+							"                           background:rgba(20, 20, 25, 0.95); " + // Darker background
+							"                           color:#00d4ff; " +                     // <--- Modern Blue Text
+							"                           padding:0 20px; z-index:999999; " +
+							"                           font-family:Segoe UI, Tahoma, sans-serif; " + // Modern font
+							"                           font-size:14px; " +
+							"                           border-bottom:3px solid #00d4ff; " +    // <--- Blue Border
+							"                           display:flex; justify-content:space-between; " +
+							"                           align-items:center; box-shadow:0 4px 12px rgba(0,0,0,0.3); " +
+							"                           pointer-events:none;';" +
+							"  " +
+							"  overlay.style.opacity = '1.0';" +
+							"  document.body.appendChild(overlay);" +
+							"}" +
+							"overlay.innerHTML = '<div><span style=\"color:#888\">📄 SHEET:</span> ' + arguments[0] + " +
+							"                    ' <span style=\"color:#444;margin:0 10px\">|</span> ' + " +
+							"                    '<span style=\"color:#888\">🧪 TEST:</span> ' + arguments[1] + '</div>' + " +
+							"                    '<div><b style=\"color:#00d4ff\">🔢 STEP ' + arguments[2] + ':</b> ' + " + // Match blue here
+							"                    '<span style=\"color:#fff; background:#333; padding:3px 8px; border-radius:4px; margin:0 10px\">' + arguments[3] + '</span> ' + " +
+							"                    '<span style=\"color:#ccc\">' + arguments[4] + '</span></div>';";
+
+			js.executeScript(script, sheet, test, stepNum, action, detail);
+		} catch (Exception e) {
+			// Fail silently
 		}
 	}
 
