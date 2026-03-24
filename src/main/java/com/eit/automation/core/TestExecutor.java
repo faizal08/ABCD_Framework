@@ -371,9 +371,31 @@ public class TestExecutor {
 				break;
 
 			case "tab":
-				log("  → XPath: " + xpath);
-				driver.findElement(By.xpath(xpath)).sendKeys(org.openqa.selenium.Keys.TAB);
-				log("  ✓ Sent Key: TAB");
+				log("  → Starting XPath: " + xpath);
+				// 1. Find the starting point
+				WebElement currentElement = driver.findElement(By.xpath(xpath));
+
+				int repeat = 1;
+				try {
+					if (value != null && !value.isEmpty()) {
+						repeat = Integer.parseInt(value.trim());
+					}
+				} catch (NumberFormatException e) {
+					repeat = 1;
+				}
+
+				// 2. Loop through the tabs
+				for (int i = 0; i < repeat; i++) {
+					// Send TAB to whoever currently has the focus
+					currentElement.sendKeys(org.openqa.selenium.Keys.TAB);
+
+					// Switch the "anchor" to the new active element for the next loop
+					currentElement = driver.switchTo().activeElement();
+
+					// Small pause to let the grid UI catch up and scroll
+					try { Thread.sleep(150); } catch (InterruptedException e) {}
+				}
+				log("  ✓ Finished " + repeat + " tabs. Final focus is now on the right.");
 				break;
 
 			case "uploadfile":
