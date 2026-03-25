@@ -887,27 +887,30 @@ public class TestExecutor {
 							"  document.body.style.marginTop = '50px';" +
 							"  overlay = document.createElement('div');" +
 							"  overlay.id = 'automation-overlay';" +
-							"  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:50px; " +
-							"                           background:rgba(20, 20, 25, 0.95); color:#00d4ff; " +
+							"  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:52px; " +
+							"                           background:rgba(15, 15, 20, 0.98); color:#00d4ff; " +
 							"                           padding:0 20px; z-index:999999; " +
-							"                           font-family:Segoe UI, Tahoma, sans-serif; font-size:14px; " +
+							"                           font-family:Segoe UI, Tahoma, sans-serif; " +
 							"                           border-bottom:3px solid #00d4ff; " +
-							"                           display:grid; grid-template-columns: 1fr auto 1fr; " +
-							"                           align-items:center; box-shadow:0 4px 12px rgba(0,0,0,0.3); " +
+							"                           display:grid; grid-template-columns: auto auto auto 1fr; " + // 1fr on the end lets the steps take the rest of the space
+							"                           align-items:center; gap:25px; box-shadow:0 4px 12px rgba(0,0,0,0.5); " +
 							"                           pointer-events:none; opacity:1.0;';" +
 							"  " +
-							"  /* Create permanent sub-containers so they don't flicker */" +
-							"  overlay.innerHTML = '<div id=\"overlay-left\"></div>' + " +
-							"                      '<div id=\"overlay-timer\" style=\"color:#fff; background:#222; padding:4px 12px; border-radius:20px; border:1px solid #444; font-weight:bold; min-width:80px; text-align:center\">⏱️ 00:00</div>' + " +
-							"                      '<div id=\"overlay-right\" style=\"text-align:right\"></div>';" +
+							"  overlay.innerHTML = " +
+							"    '<div id=\"brand-container\" style=\"display:flex; flex-direction:column; align-items:center; line-height:1; min-width:80px\">' + " +
+							"    '  <span style=\"font-weight:900; font-size:18px; letter-spacing:1px; color:#fff\">ABCD</span>' + " +
+							"    '  <span style=\"font-size:9px; color:#00d4ff; font-weight:bold; margin-top:2px; text-transform:uppercase\">Test Suite</span>' + " +
+							"    '</div>' + " +
+							"    '<div id=\"overlay-timer\" style=\"color:#fff; background:#222; padding:4px 12px; border-radius:20px; border:1px solid #444; font-weight:bold; min-width:75px; text-align:center; font-size:13px\">⏱️ 00:00</div>' + " +
+							"    '<div id=\"overlay-left\" style=\"font-size:13px; white-space:nowrap;\"></div>' + " +
+							"    '<div id=\"overlay-right\" style=\"text-align:right; font-size:13px; white-space:nowrap;\"></div>';" +
 							"  document.body.appendChild(overlay);" +
 							"}" +
 							"" +
-							"/* 1. Update ONLY the text containers (Timer stays untouched) */" +
-							"document.getElementById('overlay-left').innerHTML = '<span style=\"color:#888\">📄</span> ' + arguments[0] + ' <span style=\"color:#444;margin:0 10px\">|</span> <span style=\"color:#888\">🧪</span> ' + arguments[1];" +
-							"document.getElementById('overlay-right').innerHTML = '<b style=\"color:#00d4ff\">🔢 STEP ' + arguments[2] + ':</b> <span style=\"color:#fff; background:#333; padding:3px 8px; border-radius:4px; margin:0 5px\">' + arguments[3] + '</span> <span style=\"color:#ccc; font-size:11px\">' + arguments[4] + '</span>';" +
+							"/* Update text containers - NO MORE TRUNCATION */" +
+							"document.getElementById('overlay-left').innerHTML = \"<span style='color:#666'>📄</span> \" + arguments[0] + \" <span style='color:#444;margin:0 5px'>|</span> <span style='color:#666'>🧪</span> \" + arguments[1];" +
+							"document.getElementById('overlay-right').innerHTML = \"<b style='color:#00d4ff'>🔢 STEP \" + arguments[2] + \":</b> <span style='color:#fff; background:#333; padding:3px 8px; border-radius:4px; margin:0 5px'>\" + arguments[3] + \"</span> <span style='color:#bbb; font-size:11px'>\" + arguments[4] + \"</span>\";" +
 							"" +
-							"/* 2. Persistence Logic for Clock */ " +
 							"if (!window.automationStartTime) {" +
 							"  window.automationStartTime = Date.now();" +
 							"}" +
