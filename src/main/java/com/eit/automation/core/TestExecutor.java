@@ -887,28 +887,40 @@ public class TestExecutor {
 							"  document.body.style.marginTop = '50px';" +
 							"  overlay = document.createElement('div');" +
 							"  overlay.id = 'automation-overlay';" +
-							"  " +
-							"  /* CHANGE COLORS BELOW: color is text, border-bottom is the line */ " +
 							"  overlay.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:50px; " +
-							"                           background:rgba(20, 20, 25, 0.95); " + // Darker background
-							"                           color:#00d4ff; " +                     // <--- Modern Blue Text
+							"                           background:rgba(20, 20, 25, 0.95); color:#00d4ff; " +
 							"                           padding:0 20px; z-index:999999; " +
-							"                           font-family:Segoe UI, Tahoma, sans-serif; " + // Modern font
-							"                           font-size:14px; " +
-							"                           border-bottom:3px solid #00d4ff; " +    // <--- Blue Border
-							"                           display:flex; justify-content:space-between; " +
+							"                           font-family:Segoe UI, Tahoma, sans-serif; font-size:14px; " +
+							"                           border-bottom:3px solid #00d4ff; " +
+							"                           display:grid; grid-template-columns: 1fr auto 1fr; " +
 							"                           align-items:center; box-shadow:0 4px 12px rgba(0,0,0,0.3); " +
-							"                           pointer-events:none;';" +
+							"                           pointer-events:none; opacity:1.0;';" +
 							"  " +
-							"  overlay.style.opacity = '1.0';" +
+							"  /* Create permanent sub-containers so they don't flicker */" +
+							"  overlay.innerHTML = '<div id=\"overlay-left\"></div>' + " +
+							"                      '<div id=\"overlay-timer\" style=\"color:#fff; background:#222; padding:4px 12px; border-radius:20px; border:1px solid #444; font-weight:bold; min-width:80px; text-align:center\">⏱️ 00:00</div>' + " +
+							"                      '<div id=\"overlay-right\" style=\"text-align:right\"></div>';" +
 							"  document.body.appendChild(overlay);" +
 							"}" +
-							"overlay.innerHTML = '<div><span style=\"color:#888\">📄 SHEET:</span> ' + arguments[0] + " +
-							"                    ' <span style=\"color:#444;margin:0 10px\">|</span> ' + " +
-							"                    '<span style=\"color:#888\">🧪 TEST:</span> ' + arguments[1] + '</div>' + " +
-							"                    '<div><b style=\"color:#00d4ff\">🔢 STEP ' + arguments[2] + ':</b> ' + " + // Match blue here
-							"                    '<span style=\"color:#fff; background:#333; padding:3px 8px; border-radius:4px; margin:0 10px\">' + arguments[3] + '</span> ' + " +
-							"                    '<span style=\"color:#ccc\">' + arguments[4] + '</span></div>';";
+							"" +
+							"/* 1. Update ONLY the text containers (Timer stays untouched) */" +
+							"document.getElementById('overlay-left').innerHTML = '<span style=\"color:#888\">📄</span> ' + arguments[0] + ' <span style=\"color:#444;margin:0 10px\">|</span> <span style=\"color:#888\">🧪</span> ' + arguments[1];" +
+							"document.getElementById('overlay-right').innerHTML = '<b style=\"color:#00d4ff\">🔢 STEP ' + arguments[2] + ':</b> <span style=\"color:#fff; background:#333; padding:3px 8px; border-radius:4px; margin:0 5px\">' + arguments[3] + '</span> <span style=\"color:#ccc; font-size:11px\">' + arguments[4] + '</span>';" +
+							"" +
+							"/* 2. Persistence Logic for Clock */ " +
+							"if (!window.automationStartTime) {" +
+							"  window.automationStartTime = Date.now();" +
+							"}" +
+							"if (!window.automationInterval) {" +
+							"  window.automationInterval = setInterval(function() {" +
+							"    var timerElem = document.getElementById('overlay-timer');" +
+							"    if(timerElem) {" +
+							"      var diff = Math.floor((Date.now() - window.automationStartTime) / 1000);" +
+							"      var mins = Math.floor(diff / 60); var secs = diff % 60;" +
+							"      timerElem.innerHTML = '⏱️ ' + (mins < 10 ? '0' + mins : mins) + ':' + (secs < 10 ? '0' + secs : secs);" +
+							"    }" +
+							"  }, 1000);" +
+							"}";
 
 			js.executeScript(script, sheet, test, stepNum, action, detail);
 		} catch (Exception e) {
