@@ -195,6 +195,30 @@ public class ReportGenerator {
 	}
 
 	/**
+	 * Returns the current report directory path
+	 */
+	public String getReportDir() {
+		return this.reportDir;
+	}
+
+	/**
+	 * Links the video filename to the current test case result
+	 */
+	public void addVideoToTestCase(String videoFileName) {
+		// If a test is running, add to it. If not, add to the last finished test.
+		if (currentTestCase != null) {
+			currentTestCase.videoPath = videoFileName;
+		} else if (!testResults.isEmpty()) {
+			testResults.get(testResults.size() - 1).videoPath = videoFileName;
+		}
+
+		if (autoUpdateEnabled) {
+			generateReport();
+		}
+	}
+
+
+	/**
 	 * Generate/Update HTML report This is called after each test case completion
 	 */
 	public synchronized void generateReport() {
@@ -328,7 +352,12 @@ public class ReportGenerator {
 
 		for (int i = 0; i < testResults.size(); i++) {
 			TestCaseResult tcr = testResults.get(i);
-			long tcDuration = (tcr.endTime.getTime() - tcr.startTime.getTime()) / 1000;
+
+			// Calculate duration based on start and end time
+			long tcDuration = 0;
+			if (tcr.endTime != null && tcr.startTime != null) {
+				tcDuration = (tcr.endTime.getTime() - tcr.startTime.getTime()) / 1000;
+			}
 
 			String statusClass = tcr.passed ? "passed" : "failed";
 			String statusIcon = tcr.passed ? "✅" : "❌";
@@ -338,9 +367,18 @@ public class ReportGenerator {
 			writer.write("                    <div class='test-case-title'>\n");
 			writer.write("                        <span class='status-icon'>" + statusIcon + "</span>\n");
 			writer.write("                        <span class='test-name'>" + escapeHtml(tcr.name) + "</span>\n");
-			writer.write("                        <span class='test-status " + statusClass + "'>" + tcr.status
-					+ "</span>\n");
+
+			// --- VIDEO LINK INTEGRATION ---
+			if (tcr.videoPath != null) {
+				writer.write("    <a href='" + tcr.videoPath + "' target='_blank' onclick='event.stopPropagation();' " +
+						"style='margin-left:15px; text-decoration:none; background:#f39c12; color:white; " +
+						"padding:2px 10px; border-radius:15px; font-size:12px; font-weight:bold;'>🎥 Watch Video</a>\n");
+			}
+			// ------------------------------
+
+			writer.write("                        <span class='test-status " + statusClass + "'>" + tcr.status + "</span>\n");
 			writer.write("                    </div>\n");
+
 			writer.write("                    <div class='test-case-info'>\n");
 			writer.write("                        <span>Steps: " + tcr.steps.size() + "</span>\n");
 			writer.write("                        <span>Duration: " + formatDuration(tcDuration) + "</span>\n");
@@ -355,7 +393,7 @@ public class ReportGenerator {
 			writer.write("                            <tr>\n");
 			writer.write("                                <th>LineNumber</th>\n");
 			writer.write("                                <th>Step</th>\n");
-			writer.write("                                <th>Original Description</th>\n"); // 👈 Header
+			writer.write("                                <th>Original Description</th>\n");
 			writer.write("                                <th>Action</th>\n");
 			writer.write("                                <th>Value</th>\n");
 			writer.write("                                <th>XPath</th>\n");
@@ -374,21 +412,17 @@ public class ReportGenerator {
 				writer.write("                            <tr class='" + stepStatusClass + "'>\n");
 				writer.write("                                <td>" + step.lineNumber + "</td>\n");
 				writer.write("                                <td>" + step.stepNumber + "</td>\n");
-				writer.write("                                <td class='description'>" + escapeHtml(step.description)
-						+ "</td>\n"); // 👈 Data
+				writer.write("                                <td class='description'>" + escapeHtml(step.description) + "</td>\n");
 				writer.write("                                <td>" + escapeHtml(step.action) + "</td>\n");
 				writer.write("                                <td>" + escapeHtml(step.value) + "</td>\n");
 				writer.write("                                <td class='xpath'>" + escapeHtml(step.xpath) + "</td>\n");
-				writer.write("                                <td><span class='step-status'>" + stepIcon + " "
-						+ step.status + "</span></td>\n");
+				writer.write("                                <td><span class='step-status'>" + stepIcon + " " + step.status + "</span></td>\n");
 				writer.write("                                <td>" + step.timestamp + "</td>\n");
 				writer.write("                                <td>\n");
 
 				if (step.screenshotPath != null) {
-					writer.write("                                    <a href='" + step.screenshotPath
-							+ "' target='_blank' class='screenshot-link'>\n");
-					writer.write("                                        <img src='" + step.screenshotPath
-							+ "' alt='Screenshot' class='thumbnail'>\n");
+					writer.write("                                    <a href='" + step.screenshotPath + "' target='_blank' class='screenshot-link'>\n");
+					writer.write("                                        <img src='" + step.screenshotPath + "' alt='Screenshot' class='thumbnail'>\n");
 					writer.write("                                    </a>\n");
 				}
 
@@ -397,9 +431,7 @@ public class ReportGenerator {
 
 				if (step.message != null && !step.message.isEmpty()) {
 					writer.write("                            <tr>\n");
-					writer.write(
-							"                                <td colspan='9'><div class='error-details'>"
-									+ escapeHtml(step.message) + "</div></td>\n");
+					writer.write("                                <td colspan='9'><div class='error-details'>" + escapeHtml(step.message) + "</div></td>\n");
 					writer.write("                            </tr>\n");
 				}
 			}
@@ -827,6 +859,7 @@ public class ReportGenerator {
 		Date startTime;
 		Date endTime;
 		List<StepResult> steps = new ArrayList<>();
+		String videoPath;
 
 		TestCaseResult(String name) {
 			this.name = name;

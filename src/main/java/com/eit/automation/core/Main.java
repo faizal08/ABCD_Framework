@@ -5,6 +5,7 @@ import com.eit.automation.parser.StepParser;
 import com.eit.automation.parser.TestStep;
 import com.eit.automation.utils.CSVTestCaseReader;
 import com.eit.automation.utils.ReportGenerator;
+import com.eit.automation.utils.VideoRecorder;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
@@ -16,6 +17,17 @@ import java.util.Properties;
 public class Main {
     public static Properties config;
     public static TestExecutor executor;
+    private static VideoRecorder videoRecorder;
+
+    static {
+        try {
+            videoRecorder = new VideoRecorder();
+        } catch (Exception e) {
+            System.err.println("❌ Critical: Failed to initialize Video Recorder: " + e.getMessage());
+            // You can choose to leave it null; the try-catch in your loop
+            // will then handle the null pointer safely.
+        }
+    }
 
     public static void main(String[] args) {
         ReportGenerator reportGenerator = new ReportGenerator();
@@ -112,28 +124,45 @@ public class Main {
                         }
                     }
 
-                    // 1. NAVIGATION LOGIC
-                    if (!isBrowserStarted) {
-                        // Navigate to Login for the very first test case
-                        executor.getDriver().get(config.getProperty("base.url"));
-                        isBrowserStarted = true;
-                    } else {
-                        // Navigate to Dashboard for subsequent tests to clear the previous page
-                        System.out.println("🔄 Navigating to Dashboard for: " + testCaseName);
+                    // --- VIDEO RECORDING START ---
+                    // Create a safe filename from the Test Case Name
+                    String videoFileName = testCaseName.replaceAll("[^a-zA-Z0-9]", "_") + ".avi";
 
-                        String dashboardUrl = config.getProperty("dashboard.url");
-                        if (dashboardUrl != null && !dashboardUrl.isEmpty()) {
-                            executor.getDriver().get(dashboardUrl);
+                    try {
+                        System.out.println("🎥 Starting Video Recording: " + videoFileName);
+                        // Start recording into the current report's directory
+                        videoRecorder.startRecording(reportGenerator.getReportDir(), videoFileName);
+
+                        // 1. NAVIGATION LOGIC
+                        if (!isBrowserStarted) {
+                            executor.getDriver().get(config.getProperty("base.url"));
+                            isBrowserStarted = true;
                         } else {
-                            System.err.println("❌ Error: 'dashboard.url' not found in config.properties!");
+                            System.out.println("🔄 Navigating to Dashboard for: " + testCaseName);
+                            String dashboardUrl = config.getProperty("dashboard.url");
+                            if (dashboardUrl != null && !dashboardUrl.isEmpty()) {
+                                executor.getDriver().get(dashboardUrl);
+                            }
+                            try { Thread.sleep(1500); } catch (Exception ignored) {}
                         }
 
-                        // Small wait to allow the Dashboard page to load naturally
-                        try { Thread.sleep(1500); } catch (Exception ignored) {}
-                    }
+                        // Execute the test steps
+                        executeTestCase(sheetSingleName, testCaseName, stepBlock, executor, reportGenerator);
 
-                    // Execute the test steps (Success messages and popups will NOT be deleted now)
-                    executeTestCase(sheetSingleName,testCaseName, stepBlock, executor, reportGenerator);
+                    } catch (Exception e) {
+                        System.err.println("❌ Error during test execution or recording: " + e.getMessage());
+                    } finally {
+                        // --- VIDEO RECORDING STOP ---
+                        try {
+                            videoRecorder.stopRecording();
+                            System.out.println("✅ Video Recording Saved: " + videoFileName);
+
+                            // Link the video to the report generator so it can be added to HTML
+                            reportGenerator.addVideoToTestCase(videoFileName);
+                        } catch (Exception videoEx) {
+                            System.err.println("⚠️ Failed to stop video recording: " + videoEx.getMessage());
+                        }
+                    }
                 }
             }
         }
