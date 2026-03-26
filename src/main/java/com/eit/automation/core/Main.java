@@ -126,7 +126,7 @@ public class Main {
 
                     // --- VIDEO RECORDING START ---
                     // Create a safe filename from the Test Case Name
-                    String videoFileName = testCaseName.replaceAll("[^a-zA-Z0-9]", "_") + ".avi";
+                    String videoFileName = testCaseName.replaceAll("[^a-zA-Z0-9]", "_") + ".mp4";
 
                     try {
                         System.out.println("🎥 Starting Video Recording: " + videoFileName);
