@@ -2,14 +2,11 @@ package com.eit.automation.parser;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.openqa.selenium.By;
-import java.util.HashMap;
-import java.util.Map;
 
 public class StepParser {
 
@@ -678,53 +675,74 @@ public class StepParser {
 		}
 	}
 	/**
-	 * Helper method to process dynamic placeholders like {timestamp} and {randomPhone}
+	 * Process placeholders and handle Save/Reuse logic
 	 */
-	private static String processPlaceholders(String value) {
+	public static String processPlaceholders(String value) {
 		if (value == null || value.isEmpty()) return value;
 
-		// --- NEW: SAVE LOGIC ---
-		// If value contains ">>", it means: "Generate and Save"
-		// Example: "zeo_{timestamp} >> savedName"
+		// --- 1. SAVE LOGIC (e.g., "plumber_{randomAlpha} >> savedName") ---
 		if (value.contains(">>")) {
 			String[] parts = value.split(">>");
 			String template = parts[0].trim();
 			String variableName = parts[1].trim();
 
-			// Generate the random value
-			String generatedValue = template;
-			if (generatedValue.contains("{timestamp}")) {
-				generatedValue = generatedValue.replace("{timestamp}", LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddHHmmss")));
-			}
-			if (generatedValue.contains("{randomPhone}")) {
-				long firstDigit = (long) (Math.random() * 3) + 7;
-				long remainingNine = (long) (Math.floor(Math.random() * 900_000_000L) + 100_000_000L);
-				generatedValue = String.valueOf(firstDigit) + String.valueOf(remainingNine);
-			}
+			// We call the helper method here
+			String generatedValue = replaceAllPlaceholders(template);
 
-			// Save it to memory and return the result
 			savedValues.put(variableName, generatedValue);
 			return generatedValue;
 		}
 
-		// --- NEW: REUSE LOGIC ---
-		// Check if the value is a saved variable name (e.g., "{savedName}")
+		// --- 2. REUSE LOGIC (Check if the value is a saved variable) ---
 		for (String key : savedValues.keySet()) {
 			if (value.contains("{" + key + "}")) {
-				return value.replace("{" + key + "}", savedValues.get(key));
+				value = value.replace("{" + key + "}", savedValues.get(key));
 			}
 		}
 
-		// Standard placeholder logic (for one-time use)
+		// --- 3. STANDARD LOGIC (One-time use) ---
+		return replaceAllPlaceholders(value);
+	}
+
+	/**
+	 * HELPER METHOD: This is the central brain for all tags.
+	 * If you want to add a new tag, you ONLY add it here.
+	 */
+	private static String replaceAllPlaceholders(String value) {
+		if (value == null) return null;
+
+		// Fix for Plumber issue: Generate random LETTERS only
+		if (value.contains("{randomAlpha}")) {
+			value = value.replace("{randomAlpha}", generateRandomString(6));
+		}
+
+		// Standard Timestamp (Numbers)
 		if (value.contains("{timestamp}")) {
 			value = value.replace("{timestamp}", LocalDateTime.now().format(DateTimeFormatter.ofPattern("ddHHmmss")));
 		}
+
+		// Random Phone logic
 		if (value.contains("{randomPhone}")) {
 			long firstDigit = (long) (Math.random() * 3) + 7;
 			long remainingNine = (long) (Math.floor(Math.random() * 900_000_000L) + 100_000_000L);
-			value = String.valueOf(firstDigit) + String.valueOf(remainingNine);
+			String phone = String.valueOf(firstDigit) + String.valueOf(remainingNine);
+			value = value.replace("{randomPhone}", phone);
 		}
 
 		return value;
 	}
+
+	/**
+	 * Internal method to generate random uppercase letters
+	 */
+	private static String generateRandomString(int length) {
+		String alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		StringBuilder sb = new StringBuilder();
+		Random random = new Random();
+		for (int i = 0; i < length; i++) {
+			sb.append(alphabet.charAt(random.nextInt(alphabet.length())));
+		}
+		return sb.toString();
+	}
+
 }
