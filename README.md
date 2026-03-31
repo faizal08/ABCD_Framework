@@ -30,7 +30,7 @@ The framework is built on a modular "Plug-and-Play" design:
 ---
 
 ## 📸 Test Reporting Preview
-The framework generates rich and interactive HTML reports. Each test step includes automatic failure screenshots for rapid debugging.
+The framework generates rich and interactive HTML reports with video recordings for each tests. Each test step includes automatic failure screenshots for rapid debugging.
 
 ![Test Report Screenshot](report_screenshot.png)
 
