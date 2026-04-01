@@ -174,6 +174,29 @@ The framework is designed to make debugging easy:
 
 ---
 
+## 🔗 10. Cross-Sheet Dependencies (Preconditions)
+
+The framework supports **Recursive Dependencies**. If one test suite (Sheet) requires data or a state created in another sheet, you can link them directly within the Excel file.
+
+### **How to Use**
+In the **Precondition** column (Column 5) of the **very first test case row** (Row 2) of your sheet, use the keyword `RunSheet:` followed by the exact name of the required sheet.
+
+**Excel Example (Inside "AddCityAdmin" sheet):**
+
+| Test Case ID | ... | Precondition |
+| :--- | :--- | :--- |
+| TC_CA_02 | ... | **Data Dependency:** This test requires an existing area. <br><br> **RunSheet: AddCityArea** <br><br> **Authentication:** SuperAdmin session must be active. |
+
+### **How It Works**
+1.  **Detection:** The framework scans the Precondition cell for the `RunSheet:` trigger.
+2.  **Recursion:** It automatically pauses the current sheet (`AddCityAdmin`), switches to the dependency sheet (`AddCityArea`), and executes all its steps.
+3.  **Return:** Once the dependency sheet finishes, the framework automatically returns to the original sheet to continue the test.
+4.  **Smart Execution:** To save time, if `AddCityArea` has already been completed earlier in the same execution run, the framework will recognize this and skip the redundant run.
+
+> **💡 Pro-Tip:** You can include as much descriptive text as you like in the Precondition column (authentication steps, system requirements, etc.). The framework is smart enough to find the `RunSheet:` keyword hidden anywhere in that text.
+
+---
+
 ## 💡 Best Practices
 * **Relative Paths:** Use `src/main/resources/test-data/image.jpg` for uploads. Never use `C:\Users\...`.
 * **Excel Locking:** **Always close your Excel file** before running a test to avoid file access errors.

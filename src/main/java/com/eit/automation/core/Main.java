@@ -11,13 +11,19 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 
 public class Main {
     public static Properties config;
     public static TestExecutor executor;
     private static VideoRecorder videoRecorder;
+
+    // Track sheets already completed to avoid infinite loops and double runs
+    private static Set<String> executedSheets = new HashSet<>();
+    private static boolean isBrowserStarted = false;
 
     static {
         try {
@@ -85,8 +91,8 @@ public class Main {
      * Read test cases from Excel file - UPDATED TO HANDLE MULTIPLE SHEETS CORRECTLY
      */
     private static void readExcelTestCases(String excelPath, ReportGenerator reportGenerator) throws Exception {
-        String sheetName = config.getProperty("sheets.name");
-        String[] sheetNames = (sheetName != null) ? sheetName.split(",") : new String[0];
+        String sheetNameConfig = config.getProperty("sheets.name");
+        String[] sheetNames = (sheetNameConfig != null) ? sheetNameConfig.split(",") : new String[0];
 
         try (FileInputStream fis = new FileInputStream(excelPath);
              Workbook workbook = new XSSFWorkbook(fis)) {
@@ -95,78 +101,108 @@ public class Main {
                 executor = new TestExecutor(reportGenerator);
             }
 
-            boolean isBrowserStarted = false;
-
             for (String rawSheetName : sheetNames) {
-                String sheetSingleName = rawSheetName.trim();
-                Sheet sheet = workbook.getSheet(sheetSingleName);
-                if (sheet == null) {
-                    System.err.println("⚠️ Warning: Sheet '" + sheetSingleName + "' not found!");
-                    continue;
-                }
+                runSheetWithPrecondition(rawSheetName.trim(), workbook, reportGenerator);
+            }
+        }
+    }
 
-                for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-                    Row row = sheet.getRow(i);
-                    if (row == null) continue;
+    /**
+     * Logic to handle the Precondition column dependency recursively.
+     * Handles long descriptive text by searching for the "RunSheet:" keyword.
+     */
+    private static void runSheetWithPrecondition(String sheetName, Workbook workbook, ReportGenerator reportGenerator) throws Exception {
+        // 1. Prevent running the same sheet twice
+        if (executedSheets.contains(sheetName)) return;
 
-                    Cell testCaseCell = row.getCell(2);
-                    Cell stepBlockCell = row.getCell(4);
-                    if (testCaseCell == null || stepBlockCell == null) continue;
+        Sheet sheet = workbook.getSheet(sheetName);
+        if (sheet == null) {
+            System.err.println("⚠️ Warning: Sheet '" + sheetName + "' not found!");
+            return;
+        }
 
-                    String testCaseName = testCaseCell.getStringCellValue().trim();
-                    String stepBlock = stepBlockCell.getStringCellValue().trim();
+        // --- SMART PRECONDITION SEARCH ---
+        // Check the first row for dependencies
+        Row firstRow = sheet.getRow(1);
+        if (firstRow != null) {
+            Cell preconditionCell = firstRow.getCell(5); // Column 5 (Precondition)
+            if (preconditionCell != null) {
+                String fullText = preconditionCell.getStringCellValue();
 
-                    // Apply Filter Logic
-                    String filterName = config.getProperty("filter.name");
-                    if (filterName != null && !filterName.isEmpty()) {
-                        if (!testCaseName.toLowerCase().contains(filterName.toLowerCase().trim())) {
-                            continue;
-                        }
-                    }
+                // We use a simple check to see if the trigger keyword exists
+                if (fullText.contains("RunSheet:")) {
+                    // This logic splits by "RunSheet:", takes the part after it,
+                    // and then takes the first word (the sheet name) ignoring any text after it.
+                    String afterKeyword = fullText.split("RunSheet:")[1].trim();
+                    String dependencySheet = afterKeyword.split("\\s+|\\n|\\r")[0].replace(".", "").trim();
 
-                    // --- VIDEO RECORDING START ---
-                    // Create a safe filename from the Test Case Name
-                    String videoFileName = testCaseName.replaceAll("[^a-zA-Z0-9]", "_") + ".mp4";
-
-                    try {
-                        System.out.println("🎥 Starting Video Recording: " + videoFileName);
-                        // Start recording into the current report's directory
-                        videoRecorder.startRecording(reportGenerator.getReportDir(), videoFileName);
-
-                        // 1. NAVIGATION LOGIC
-                        if (!isBrowserStarted) {
-                            executor.getDriver().get(config.getProperty("base.url"));
-                            isBrowserStarted = true;
-                        } else {
-                            System.out.println("🔄 Navigating to Dashboard for: " + testCaseName);
-                            String dashboardUrl = config.getProperty("dashboard.url");
-                            if (dashboardUrl != null && !dashboardUrl.isEmpty()) {
-                                executor.getDriver().get(dashboardUrl);
-                            }
-                            try { Thread.sleep(1500); } catch (Exception ignored) {}
-                        }
-
-                        // Execute the test steps
-                        executeTestCase(sheetSingleName, testCaseName, stepBlock, executor, reportGenerator);
-
-                    } catch (Exception e) {
-                        System.err.println("❌ Error during test execution or recording: " + e.getMessage());
-                    } finally {
-                        // --- VIDEO RECORDING STOP ---
-                        try {
-                            videoRecorder.stopRecording();
-                            System.out.println("✅ Video Recording Saved: " + videoFileName);
-
-                            // Link the video to the report generator so it can be added to HTML
-                            reportGenerator.addVideoToTestCase(videoFileName);
-                        } catch (Exception videoEx) {
-                            System.err.println("⚠️ Failed to stop video recording: " + videoEx.getMessage());
-                        }
+                    if (!executedSheets.contains(dependencySheet)) {
+                        System.out.println("🔗 Dependency Found in Description: [" + dependencySheet + "]");
+                        System.out.println("🚀 Auto-triggering prerequisite sheet...");
+                        runSheetWithPrecondition(dependencySheet, workbook, reportGenerator);
                     }
                 }
             }
         }
+
+        // 2. Now proceed to run the actual sheet test cases
+        processSheetData(sheet, sheetName, reportGenerator);
+        executedSheets.add(sheetName);
     }
+    /**
+     * The actual loop that runs the test cases in the sheet
+     */
+    private static void processSheetData(Sheet sheet, String sheetName, ReportGenerator reportGenerator) {
+        System.out.println("\n📖 Processing Sheet: [" + sheetName + "]");
+
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row == null) continue;
+
+            Cell testCaseCell = row.getCell(2);
+            Cell stepBlockCell = row.getCell(4);
+            if (testCaseCell == null || stepBlockCell == null) continue;
+
+            String testCaseName = testCaseCell.getStringCellValue().trim();
+            String stepBlock = stepBlockCell.getStringCellValue().trim();
+
+            String filterName = config.getProperty("filter.name");
+            if (filterName != null && !testCaseName.toLowerCase().contains(filterName.toLowerCase().trim())) {
+                continue;
+            }
+
+            String videoFileName = testCaseName.replaceAll("[^a-zA-Z0-9]", "_") + ".mp4";
+
+            try {
+                System.out.println("🎥 Starting Video Recording: " + videoFileName);
+                videoRecorder.startRecording(reportGenerator.getReportDir(), videoFileName);
+
+                if (!isBrowserStarted) {
+                    executor.getDriver().get(config.getProperty("base.url"));
+                    isBrowserStarted = true;
+                } else {
+                    String dashboardUrl = config.getProperty("dashboard.url");
+                    if (dashboardUrl != null && !dashboardUrl.isEmpty()) {
+                        executor.getDriver().get(dashboardUrl);
+                    }
+                    try { Thread.sleep(1500); } catch (Exception ignored) {}
+                }
+
+                executeTestCase(sheetName, testCaseName, stepBlock, executor, reportGenerator);
+
+            } catch (Exception e) {
+                System.err.println("❌ Error in " + testCaseName + ": " + e.getMessage());
+            } finally {
+                try {
+                    videoRecorder.stopRecording();
+                    reportGenerator.addVideoToTestCase(videoFileName);
+                } catch (Exception ignored) {}
+            }
+        }
+    }
+
+
+
     /**
      * Read test cases from CSV file
      */
