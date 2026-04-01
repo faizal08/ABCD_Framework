@@ -67,6 +67,12 @@ public class TestExecutor {
 
 		ChromeOptions options = new ChromeOptions();
 
+		// --- OPTIONAL: Headless Mode (Uncomment for Hosting/CI-CD) ---
+		// log("→ Setting Headless Mode: OFF (Development Mode)");
+		// options.addArguments("--headless=new");
+		// options.addArguments("--window-size=1920,1080");
+		// options.addArguments("--disable-gpu");
+
 		// --- NEW: Disable Password Manager & Data Breach Popups ---
 		Map<String, Object> prefs = new HashMap<>();
 		prefs.put("credentials_enable_service", false); // Disables the "Save Password" prompt
