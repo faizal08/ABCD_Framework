@@ -112,7 +112,6 @@ public class Main {
      * Handles long descriptive text by searching for the "RunSheet:" keyword.
      */
     private static void runSheetWithPrecondition(String sheetName, Workbook workbook, ReportGenerator reportGenerator) throws Exception {
-        // 1. Prevent running the same sheet twice
         if (executedSheets.contains(sheetName)) return;
 
         Sheet sheet = workbook.getSheet(sheetName);
@@ -121,31 +120,36 @@ public class Main {
             return;
         }
 
-        // --- SMART PRECONDITION SEARCH ---
-        // Check the first row for dependencies
+        // --- UPDATED MULTI-PRECONDITION SEARCH ---
         Row firstRow = sheet.getRow(1);
         if (firstRow != null) {
-            Cell preconditionCell = firstRow.getCell(5); // Column 5 (Precondition)
+            Cell preconditionCell = firstRow.getCell(5);
             if (preconditionCell != null) {
                 String fullText = preconditionCell.getStringCellValue();
 
-                // We use a simple check to see if the trigger keyword exists
                 if (fullText.contains("RunSheet:")) {
-                    // This logic splits by "RunSheet:", takes the part after it,
-                    // and then takes the first word (the sheet name) ignoring any text after it.
-                    String afterKeyword = fullText.split("RunSheet:")[1].trim();
-                    String dependencySheet = afterKeyword.split("\\s+|\\n|\\r")[0].replace(".", "").trim();
+                    // 1. Split by "RunSheet:" in case there are multiple mentions
+                    String[] parts = fullText.split("RunSheet:");
 
-                    if (!executedSheets.contains(dependencySheet)) {
-                        System.out.println("🔗 Dependency Found in Description: [" + dependencySheet + "]");
-                        System.out.println("🚀 Auto-triggering prerequisite sheet...");
-                        runSheetWithPrecondition(dependencySheet, workbook, reportGenerator);
+                    // Skip index 0 as it is the text before the first "RunSheet:"
+                    for (int j = 1; j < parts.length; j++) {
+                        // 2. Clean the part to get the sheet names (handles comma-separated)
+                        String rawNames = parts[j].split("\\n|\\r")[0].trim(); // Get the line
+                        String[] dependencies = rawNames.split(","); // Split by comma
+
+                        for (String dep : dependencies) {
+                            String dependencySheet = dep.trim().split("\\s+")[0].replace(".", "");
+
+                            if (!dependencySheet.isEmpty() && !executedSheets.contains(dependencySheet)) {
+                                System.out.println("🔗 Multi-Dependency Found: [" + dependencySheet + "]");
+                                runSheetWithPrecondition(dependencySheet, workbook, reportGenerator);
+                            }
+                        }
                     }
                 }
             }
         }
 
-        // 2. Now proceed to run the actual sheet test cases
         processSheetData(sheet, sheetName, reportGenerator);
         executedSheets.add(sheetName);
     }
