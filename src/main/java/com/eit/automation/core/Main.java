@@ -41,34 +41,47 @@ public class Main {
         try {
             System.out.println("=== 🚀 EIT Test Automation Started ===\n");
 
-            // Load configuration
+            // --- IMPROVED DYNAMIC CONFIG LOADING ---
             config = new Properties();
-            FileInputStream configFis = new FileInputStream("config.properties");
-            config.load(configFis);
+            String env = System.getProperty("env");
 
-            String excelName = config.getProperty("excel.name", "Default_Test.xlsx");
-            reportGenerator.setExcelFileName(excelName);
+            String configFileName = env + ".properties";
+            File configFile = new File(configFileName);
 
-            reportGenerator.startTestExecution();
+            if (!configFile.exists()) {
+                System.out.println("⚠️  Config '" + configFileName + "' not found. Falling back to 'config.properties'.");
+                configFileName = "config.properties";
+                configFile = new File(configFileName);
+            }
 
-            // Determine test file path
+            System.out.println("🔧 Loading Configuration: " + configFile.getAbsolutePath());
+            try (FileInputStream configFis = new FileInputStream(configFile)) {
+                config.load(configFis);
+            }
+
+            // Validate that we actually loaded data (prevents NullPointerException later)
             String testFilePath = config.getProperty("excel.name");
+            if (testFilePath == null || testFilePath.isEmpty()) {
+                throw new RuntimeException("❌ Error: 'excel.name' is missing or empty in " + configFileName);
+            }
+            // --- END CONFIG LOADING ---
+
+            reportGenerator.setExcelFileName(testFilePath);
+            reportGenerator.startTestExecution();
 
             System.out.println("📂 Reading test cases from: " + testFilePath);
             File testFile = new File(testFilePath);
             if (!testFile.exists()) {
-                throw new RuntimeException("Test file not found: " + testFile.getAbsolutePath());
+                throw new RuntimeException("Test file not found at: " + testFile.getAbsolutePath());
             }
 
             // Detect file type and read accordingly
             if (testFilePath.toLowerCase().endsWith(".csv")) {
                 System.out.println("📄 Detected CSV file format");
-                // Initialize executor inside or pass it in - following your original style
                 executor = new TestExecutor(reportGenerator);
                 readCSVTestCases(testFilePath, executor, reportGenerator);
             } else if (testFilePath.toLowerCase().endsWith(".xlsx") || testFilePath.toLowerCase().endsWith(".xls")) {
                 System.out.println("📊 Detected Excel file format");
-                // We do not initialize here anymore because we need a fresh one per sheet
                 readExcelTestCases(testFilePath, reportGenerator);
             } else {
                 throw new RuntimeException("Unsupported file format. Please use .csv, .xlsx, or .xls files.");
@@ -77,6 +90,7 @@ public class Main {
             reportGenerator.endTestExecution();
 
         } catch (Exception e) {
+            System.err.println("❌ Execution failed: " + e.getMessage());
             e.printStackTrace();
             reportGenerator.endTestExecution();
         } finally {
@@ -86,7 +100,6 @@ public class Main {
             }
         }
     }
-
     /**
      * Read test cases from Excel file - UPDATED TO HANDLE MULTIPLE SHEETS CORRECTLY
      */
