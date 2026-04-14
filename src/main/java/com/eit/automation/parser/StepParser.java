@@ -78,6 +78,9 @@ public class StepParser {
 		ACTION_PATTERNS.add(new StepPattern(".*\\bclick\\b.*", "click"));
 		ACTION_PATTERNS.add(new StepPattern(".*\\bpress\\b(?!.*(enter|tab|key|escape)).*", "click")); // Press button
 
+		// For Test Data Cleanup and Accessing Database
+		ACTION_PATTERNS.add(new StepPattern(".*\\b(sql delete|db cleanup|execute sql)\\b.*", "sql_cleanup"));
+
 		// ========================================
 		// 5. FILE UPLOAD
 		// ========================================

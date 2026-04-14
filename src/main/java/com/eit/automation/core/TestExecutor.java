@@ -24,6 +24,7 @@ import com.eit.automation.actions.VerificationActions;
 import com.eit.automation.actions.WaitActions;
 import com.eit.automation.parser.TestStep;
 import com.eit.automation.utils.ReportGenerator;
+import com.eit.automation.utils.DatabaseUtils;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -683,6 +684,18 @@ public class TestExecutor {
 				log("  → XPath: " + xpath);
 				waitActions.waitForElementClickable(xpath);
 				log("  ✓ Element is clickable");
+				break;
+
+			case "sql_cleanup":
+				try {
+					log("  → SQL Query: " + value);
+					// DatabaseUtils will handle the safety check for the WHERE clause
+					com.eit.automation.utils.DatabaseUtils.executeCleanup(value);
+					log("  ✓ SQL Cleanup executed successfully");
+				} catch (Exception e) {
+					log("  ❌ SQL Cleanup Failed: " + e.getMessage());
+					throw e; // Rethrow to mark the test as failed
+				}
 				break;
 
 			default:
