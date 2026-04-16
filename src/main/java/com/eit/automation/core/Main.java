@@ -78,7 +78,7 @@ public class Main {
             // Detect file type and read accordingly
             if (testFilePath.toLowerCase().endsWith(".csv")) {
                 System.out.println("📄 Detected CSV file format");
-                executor = new TestExecutor(reportGenerator);
+                executor = new TestExecutor(reportGenerator,config);
                 readCSVTestCases(testFilePath, executor, reportGenerator);
             } else if (testFilePath.toLowerCase().endsWith(".xlsx") || testFilePath.toLowerCase().endsWith(".xls")) {
                 System.out.println("📊 Detected Excel file format");
@@ -111,7 +111,7 @@ public class Main {
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             if (executor == null) {
-                executor = new TestExecutor(reportGenerator);
+                executor = new TestExecutor(reportGenerator,config);
             }
 
             for (String rawSheetName : sheetNames) {

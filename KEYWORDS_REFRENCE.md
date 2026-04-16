@@ -197,6 +197,89 @@ In the **Precondition** column (Column 5) of the **very first test case row** (R
 
 ---
 
+## 🗄️ 11. Database Cleanup & Maintenance
+
+This feature allows the framework to interact directly with the PostgreSQL database to remove test data after a suite finishes. This ensures your environment remains clean and prevents "Duplicate Entry" errors during repeated test runs.
+
+> [!CAUTION]
+> ### ⚠️ **WARNING: USE WITH EXTREME CAUTION**
+> This tool interacts **directly** with the production/test database. Incorrect queries can result in permanent data loss.
+> * **Double-check your syntax** before adding queries to Excel.
+> * **Always use specific identifiers** (like `{areaName}`) to ensure you only delete the data you created.
+> * **Never** attempt to run queries on tables you are not authorized to modify.
+
+### **The Safety Firewall**
+To prevent accidental data loss, the framework includes a **Safety Check**:
+* Any `DELETE` or `UPDATE` query **must** contain a `WHERE` clause.
+* If a `WHERE` clause is missing, the framework will block the execution and throw an error to protect the database integrity.
+
+| Action | Phrase Examples | Description |
+| :--- | :--- | :--- |
+| **sql_cleanup** | `sql delete`, `sql cleanup`, `execute sql` | Executes a SQL query against the configured database. |
+
+### **How to Use**
+1.  **Action:** Use `sql delete` or `sql_cleanup` in the Action column.
+2.  **Value:** Write the full SQL query.
+3.  **Dynamic Variables:** You can use saved variables (e.g., `{areaName}`) inside your SQL query to target the specific data created during that test run.
+
+**Excel Example:**
+
+| Test Step Description | Action | Value | Target (XPath) |
+| :--- | :--- | :--- | :--- |
+| Remove Test Area | sql delete | DELETE FROM we1.admin_area_list WHERE name = '{areaName}'; | - |
+| Remove Auto Driver | sql delete | DELETE FROM we1.providers WHERE first_name = '{autoName}'; | - |
+| Remove Bank Details | sql delete | DELETE FROM we1.provider_bank_details WHERE holder_name = '{autoName}'; | - |
+| Hard Pause | wait | 2 | - |
+
+### **Common Cleanup Queries**
+Below are frequently used cleanup templates for various modules:
+
+| Module | SQL Template |
+| :--- | :--- |
+| **Store/Hotel** | `DELETE FROM we1.store_details WHERE name = '{storeName}';` |
+| **Users** | `DELETE FROM we1.users WHERE first_name = '{customerName}';` |
+| **Documents** | `DELETE FROM we1.required_documents WHERE name = '{documentName}';` |
+| **Promo Codes** | `DELETE FROM we1.promocode_details WHERE promo_code = '{promoCodeName}';` |
+
+> **💡 Best Practice:** > Always place your cleanup steps at the **very end** of your Excel sheet in the test sheet named "DataCleanUpSheet" since some data is required for completion of other tests. It is also recommended to add a small `wait` (e.g., 2 seconds) after the final DB command to allow the system to refresh its state.
+
+---
+
+## 🌍 12. Multi-Environment Configuration (CLI Support)
+
+The framework now supports **Dynamic Configuration Loading**. Instead of manually editing the `config.properties` file to switch between projects (e.g., ERP vs. WE1), you can maintain separate configuration files and trigger them via the command line.
+
+### **How it Works**
+The framework looks for a system property named `env`.
+* If you pass `-Denv=erp`, it loads `erp.properties`.
+* If you pass `-Denv=we1_superadmin`, it loads `we1_superadmin.properties`.
+* **Fallback:** If no environment is specified, it defaults to `config.properties`.
+
+### **Setup Guide**
+Create separate `.properties` files in your root folder. Ensure each file has its own `base.url`, `excel.name`, and `sheets.name`.
+
+#### **Example: `erp.properties`**
+```properties
+base.url=[https://erp.qa.ethicalintelligent.com/](https://erp.qa.ethicalintelligent.com/)
+excel.name=erp_regression.xlsx
+sheets.name=erpLogin
+admin.email=administrator
+admin.password=eit@123
+```
+### **Execution Commands (CLI)**
+To run your tests against a specific environment, open your terminal in the project root and use the following Maven commands:
+
+| Target Site | CLI Command |
+| :--- | :--- |
+| **Default Fallback** | `mvn exec:java -Denv=config` |
+| **ERP Regression** | `mvn exec:java -Denv=erp` |
+| **WE1 Super Admin** | `mvn exec:java -Denv=we1_superadmin` |
+
+---
+
+> **💡 Note:** The `-Denv` parameter tells the framework exactly which `.properties` file to load before starting the browser. Make sure your environment file (e.g., `erp.properties`) is located in the root folder of your project.
+---
+
 ## 💡 Best Practices
 * **Relative Paths:** Use `src/main/resources/test-data/image.jpg` for uploads. Never use `C:\Users\...`.
 * **Excel Locking:** **Always close your Excel file** before running a test to avoid file access errors.

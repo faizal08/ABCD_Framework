@@ -7,6 +7,7 @@
 [![Selenium](https://img.shields.io/badge/Selenium-4.x-43B02A?style=for-the-badge&logo=selenium&logoColor=white)](https://www.selenium.dev/)
 [![JCodec](https://img.shields.io/badge/Video-JCodec--0.2.5-blue?style=for-the-badge)](https://jcodec.org/)
 [![Maven](https://img.shields.io/badge/Build-Maven-C71A36?style=for-the-badge&logo=apache-maven&logoColor=white)](https://maven.apache.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
 **A Reusable and Scalable Framework for Simplified Web Automation**
 </div>
@@ -53,6 +54,15 @@ You can capture a generated value and reuse it in later steps using the `>>` ope
 2. **Reuse:** Use `{myUser}` in any following step to type the exact same name.
 
 ---
+## 🚀 Advanced Execution (CLI)
+You can switch environments without modifying any configuration files by using the `-Denv` system property:
+
+| Target Environment | CLI Command |
+| :--- | :--- |
+| **Default Config** | `mvn exec:java -Denv=config` |
+| **ERP System** | `mvn exec:java -Denv=erp` |
+| **WE1 Super Admin** | `mvn exec:java -Denv=we1_superadmin` |
+---
 
 ## ✨ Key Features
 * **🚀 High Reusability:** Write a keyword once and use it across hundreds of test cases.
@@ -60,6 +70,8 @@ You can capture a generated value and reuse it in later steps using the `>>` ope
 * **🔍 Robust Logging:** Detailed console logs for every action performed during execution.
 * **🛠️ Error Handling:** Built-in try-catch blocks and explicit waits to handle synchronization issues.
 * **🎥 Automated Video Logs:** Every test execution is recorded and saved to `test-outputs/videos`. Perfect for reviewing "flaky" tests that pass locally but fail in CI.
+* **🗄️ Automated DB Cleanup:** Direct PostgreSQL integration to delete/update test records after execution, keeping environments clean.
+* **🌍 Multi-Environment Support:** Run tests against different sites (ERP, Admin, User) instantly using dynamic CLI arguments.
 
 ---
 

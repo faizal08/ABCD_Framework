@@ -27,6 +27,7 @@ import com.eit.automation.utils.ReportGenerator;
 import com.eit.automation.utils.DatabaseUtils;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 public class TestExecutor {
 
@@ -47,6 +48,8 @@ public class TestExecutor {
 	private PageObjectManager pageObjectManager; // NEW
 
 	private ReportGenerator reportGenerator;
+
+	private Properties config;
 
 	// Logging configuration
 	private boolean detailedLogging = true; // Enabled by default for better debugging
@@ -111,9 +114,10 @@ public class TestExecutor {
 		log("");
 	}
 
-	public TestExecutor(ReportGenerator reportGenerator) {
+	public TestExecutor(ReportGenerator reportGenerator, Properties config) {
 		this();
 		this.reportGenerator = reportGenerator;
+		this.config = config;
 		log("✓ Report generator configured");
 		log("");
 	}
@@ -690,7 +694,7 @@ public class TestExecutor {
 				try {
 					log("  → SQL Query: " + value);
 					// DatabaseUtils will handle the safety check for the WHERE clause
-					com.eit.automation.utils.DatabaseUtils.executeCleanup(value);
+					com.eit.automation.utils.DatabaseUtils.executeCleanup(value, this.config);
 					log("  ✓ SQL Cleanup executed successfully");
 				} catch (Exception e) {
 					log("  ❌ SQL Cleanup Failed: " + e.getMessage());
