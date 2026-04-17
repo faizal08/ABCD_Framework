@@ -53,6 +53,7 @@ public class TestExecutor {
 
 	private String excelName;
 
+	private boolean isCleanupMode = false; // Flag for special cleanup UI
 	// Logging configuration
 	private boolean detailedLogging = true; // Enabled by default for better debugging
 	private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
@@ -696,13 +697,17 @@ public class TestExecutor {
 
 			case "sql_cleanup":
 				try {
+					// --- NEW UPDATE: Show 'Trash Bin' screen if in cleanup mode ---
+					if (this.isCleanupMode) {
+						showCleanupOverlay();
+					}
+
 					log("  → SQL Query: " + value);
-					// DatabaseUtils will handle the safety check for the WHERE clause
 					com.eit.automation.utils.DatabaseUtils.executeCleanup(value, this.config);
 					log("  ✓ SQL Cleanup executed successfully");
 				} catch (Exception e) {
 					log("  ❌ SQL Cleanup Failed: " + e.getMessage());
-					throw e; // Rethrow to mark the test as failed
+					throw e;
 				}
 				break;
 
@@ -896,6 +901,61 @@ public class TestExecutor {
 			return String.format("%dm %ds %dms", minutes, seconds, ms);
 		} else {
 			return String.format("%ds %dms", seconds, ms);
+		}
+	}
+
+	// Method to enable/disable cleanup mode from Main.java
+	public void setCleanupMode(boolean mode) {
+		this.isCleanupMode = mode;
+	}
+
+	private void showCleanupOverlay() {
+		try {
+			if (driver == null) return;
+			org.openqa.selenium.JavascriptExecutor js = (org.openqa.selenium.JavascriptExecutor) driver;
+
+			String cleanupScript =
+					"var cleanOverlay = document.getElementById('cleanup-screen');" +
+							"if(!cleanOverlay) {" +
+							"  cleanOverlay = document.createElement('div');" +
+							"  cleanOverlay.id = 'cleanup-screen';" +
+							"  cleanOverlay.style.cssText = 'position:fixed; top:52px; left:0; width:100%; height:100%; " +
+							"                               background:#0b0b0f; z-index:999998; " +
+							"                               display:flex; flex-direction:column; align-items:center; " +
+							"                               justify-content:center; color:white; " +
+							"                               font-family:\"Segoe UI\", Tahoma, sans-serif;';" +
+							"  " +
+							"  cleanOverlay.innerHTML = " +
+							"    '<div style=\"display:flex; flex-direction:column; align-items:center; margin-bottom:40px;\">' + " +
+							"    '  <div style=\"font-weight:900; font-size:60px; letter-spacing:4px; color:#fff; margin-bottom:0;\">ABCD</div>' + " +
+							"    '  <div style=\"font-size:14px; color:#00d4ff; font-weight:bold; text-transform:uppercase; letter-spacing:2px;\">Test Data Cleanup</div>' + " +
+							"    '</div>' + " +
+							"    '<div style=\"position:relative; margin-bottom:30px;\">' + " +
+							"    '  <div style=\"font-size:100px; filter: drop-shadow(0 0 15px #00d4ff); animation: pulse 2s infinite;\">🗄️</div>' + " +
+							"    '</div>' + " +
+							"    '<div style=\"text-align:center; border: 1px solid #1a1a24; padding: 40px 60px; border-radius:15px; " +
+							"                 background: #12121a; box-shadow: 0 15px 40px rgba(0,0,0,0.7);\">' + " +
+							"    '  <h2 style=\"color:#ff4444; margin:0; font-size:18px; letter-spacing:1px; font-weight:bold;\">CLEANUP IN PROGRESS</h2>' + " +
+							"    '  <div style=\"width:250px; background:#1a1a1a; height:4px; margin:25px auto; border-radius:10px; overflow:hidden;\">' + " +
+							"    '    <div style=\"width:40%; background:#00d4ff; height:100%; animation: scanLine 1.5s infinite ease-in-out;\"></div>' + " +
+							"    '  </div>' + " +
+							"    '  <p style=\"font-size:15px; color:#999; margin:0; line-height:1.8;\">' + " +
+							"    '    System is securely removing test data records from the database.<br>' + " +
+							"    '    <span style=\"color:#fff; font-weight:bold; background: rgba(255,68,68,0.2); padding: 2px 6px; border-radius:3px;\">DO NOT CLOSE THE BROWSER</span><br>' + " +
+							"    '    <span style=\"color:#fff; font-weight:bold; background: rgba(255,68,68,0.2); padding: 2px 6px; border-radius:3px;\">DO NOT STOP TEST EXECUTION</span>' + " +
+							"    '  </p>' + " +
+							"    '</div>' + " +
+							"    '<style>' + " +
+							"    '  @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 50% { transform: scale(1.08); opacity: 1; } 100% { transform: scale(1); opacity: 0.8; } }' + " +
+							"    '  @keyframes scanLine { 0% { width: 0%; margin-left: 0%; } 50% { width: 50%; margin-left: 25%; } 100% { width: 0%; margin-left: 100%; } }' + " +
+							"    '</style>';" +
+							"  document.body.appendChild(cleanOverlay);" +
+							"  document.body.style.overflow = 'hidden';" +
+							"}";
+
+			js.executeScript(cleanupScript);
+		} catch (Exception e) {
+			// Fail silently
 		}
 	}
 

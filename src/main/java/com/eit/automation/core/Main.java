@@ -172,6 +172,10 @@ public class Main {
     private static void processSheetData(Sheet sheet, String sheetName, ReportGenerator reportGenerator) {
         System.out.println("\n📖 Processing Sheet: [" + sheetName + "]");
 
+        if (executor != null) {
+            executor.setCleanupMode(sheetName.equalsIgnoreCase("DataCleanUpSheet"));
+        }
+
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
             if (row == null) continue;
