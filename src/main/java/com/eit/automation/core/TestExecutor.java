@@ -51,6 +51,8 @@ public class TestExecutor {
 
 	private Properties config;
 
+	private String excelName;
+
 	// Logging configuration
 	private boolean detailedLogging = true; // Enabled by default for better debugging
 	private DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
@@ -118,6 +120,8 @@ public class TestExecutor {
 		this();
 		this.reportGenerator = reportGenerator;
 		this.config = config;
+		String fullPath = config.getProperty("excel.name");
+		this.excelName = (fullPath != null) ? fullPath.split("\\.")[0] : "Unknown_Excel";
 		log("✓ Report generator configured");
 		log("");
 	}
@@ -948,7 +952,7 @@ public class TestExecutor {
 							"  }, 1000);" +
 							"}";
 
-			js.executeScript(script, sheet, test, stepNum, action, detail);
+			js.executeScript(script, this.excelName, test, stepNum, action, detail);
 		} catch (Exception e) {
 			// Fail silently
 		}
