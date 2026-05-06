@@ -274,7 +274,16 @@ public class TestExecutor {
 		// Auto-generate XPath if empty (Legacy fallback)
 		if (xpath == null || xpath.isEmpty()) {
 			if (value != null && !value.isEmpty()) {
-				if (!action.startsWith("verifytoast") && !action.equals("verifysuccesstoast")
+
+				// --- ADDED THIS CHECK ---
+				// Detect if the value is actually an XPath string instead of a label
+				boolean isDirectXPath = value.startsWith("//") || value.startsWith("(");
+
+				if (isDirectXPath) {
+					xpath = value; // Use the value as the XPath directly
+					log("  → Using direct XPath from Value column: " + xpath);
+				}
+				else if (!action.startsWith("verifytoast") && !action.equals("verifysuccesstoast")
 						&& !action.equals("verifyerrortoast") && !action.equals("verifyalert")
 						&& !action.equals("verifyalertmessage") && !action.equals("verifynotification")
 						&& !action.equals("robotupload")) {
@@ -289,10 +298,7 @@ public class TestExecutor {
 
 		if ((xpath == null || xpath.isEmpty()) && (value == null || value.isEmpty())) {
 			log("  ⚠ Both XPath and Value empty - skipping");
-			// throw new RuntimeException("Both XPath and Value cannot be empty for action:
-			// " + action);
 		}
-
 		switch (action) {
 			case "openurl":
 			case "navigate":
@@ -337,9 +343,14 @@ public class TestExecutor {
 				break;
 
 			case "click":
-				// case "select":
 				log("  → XPath: " + xpath);
-				clickActions.clickElementWithRetry(xpath, value);
+				// If we have a direct XPath, we should tell the action handler
+				// NOT to use the 'Value' for auto-generation.
+				if (xpath != null && !xpath.isEmpty()) {
+					clickActions.clickElementWithRetry(xpath, null);
+				} else {
+					clickActions.clickElementWithRetry(xpath, value);
+				}
 				log("  ✓ Clicked");
 				break;
 			case "select":
