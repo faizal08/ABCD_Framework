@@ -31,6 +31,10 @@ public class StepParser {
 	private static final List<StepPattern> VERIFY_PATTERNS = new ArrayList<>();
 
 	static {
+
+		// verify element present or not present in an given page
+		ACTION_PATTERNS.add(new StepPattern(".*\\b(element_present|exists)\\b.*", "element_present"));
+		ACTION_PATTERNS.add(new StepPattern(".*\\b(element_absent|not_exists)\\b.*", "element_absent"));
 		// ========================================
 		// 1. VERIFICATION (Highest Priority - Assertions often start sentence)
 		// ========================================

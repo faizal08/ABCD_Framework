@@ -457,6 +457,36 @@ public class TestExecutor {
 				log("  ✓ Upload complete");
 				break;
 
+
+			case "element_present":
+				log("  🔍 Checking if element is present: " + xpath);
+				try {
+					// Use a short explicit wait to see if it appears
+					WebDriverWait shortWait = new WebDriverWait(driver, Duration.ofSeconds(5));
+					shortWait.until(ExpectedConditions.presenceOfElementLocated(By.xpath(xpath)));
+					log("  ✅ Element found (as expected).");
+				} catch (Exception e) {
+					throw new RuntimeException("Validation Failed: Element was expected but NOT found: " + xpath);
+				}
+				break;
+
+			case "element_absent":
+				log("  🚫 Checking if element is absent: " + xpath);
+				// 1. Temporarily disable implicit wait to check immediately
+				driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(0));
+				try {
+					List<WebElement> elements = driver.findElements(By.xpath(xpath));
+					if (elements.isEmpty()) {
+						log("  ✅ Element is absent (as expected).");
+					} else {
+						throw new RuntimeException("Validation Failed: Element was found but should be ABSENT: " + xpath);
+					}
+				} finally {
+					// 2. ALWAYS restore the implicit wait
+					driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(0));
+				}
+				break;
+
 			case "verifytoast":
 			case "verifytoastmessage":
 			case "verifysuccesstoast":
