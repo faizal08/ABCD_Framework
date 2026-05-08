@@ -81,7 +81,28 @@ This document is the official reference for writing automated test cases. The `S
 
 ---
 
-## ⏳ 5. Explicit Waits & Toasts
+## 🛡️ 5. Advanced Presence Assertions (Negative Testing)
+
+These keywords allow you to perform strict validation on whether an element should or should not exist in the DOM. This is particularly useful for verifying **Role-Based Access Control (RBAC)** where certain menus must be hidden from specific users.
+
+| Action | Phrase Examples | Description |
+| :--- | :--- | :--- |
+| **element_present** | `element exists`, `present` | Confirms an element is in the DOM. Uses a **5-second explicit wait** before failing. |
+| **element_absent** | `element not present`, `absent` | Confirms an element is **NOT** in the DOM. It temporarily disables implicit waits to perform an immediate check without slowing down the test. |
+
+**Excel Example:**
+
+| Test Step Description | Action | Value | Target (XPath) |
+| :--- | :--- | :--- | :--- |
+| Check Transport Menu exists | element_present | - | //h2[normalize-space()='Transport Services'] |
+| Check Delivery Service exists | element_absent | - | //h2[normalize-space()='Delivery Services'] |
+| Check Provider Service exists | element_absent | - | //h2[normalize-space()='Provider Services'] |
+
+> **💡 Technical Note:** When using `element_absent`, the framework automatically sets `implicitlyWait` to 0 seconds to ensure the check is instantaneous, then restores your default settings immediately after.
+---
+
+
+## ⏳ 6. Explicit Waits & Toasts
 
 | Action | Phrase Examples (Natural Language) | Description |
 | :--- | :--- | :--- |
@@ -100,7 +121,7 @@ This document is the official reference for writing automated test cases. The `S
 
 ---
 
-## 🖱️ 6. Scrolling, Frames & Maps
+## 🖱️ 7. Scrolling, Frames & Maps
 
 | Action | Phrase Examples (Natural Language) | Description |
 | :--- | :--- | :--- |
@@ -119,7 +140,7 @@ This document is the official reference for writing automated test cases. The `S
 
 ---
 
-## 🎲 7. Dynamic Placeholders (Value Column)
+## 🎲 8. Dynamic Placeholders (Value Column)
 
 | Placeholder | Result Example | Best For |
 | :--- | :--- | :--- |
@@ -138,7 +159,7 @@ This document is the official reference for writing automated test cases. The `S
 
 ---
 
-## 💾 8. Save & Reuse Logic
+## 💾 9. Save & Reuse Logic
 
 Capture a value in one step to use it in a later step.
 
@@ -166,7 +187,7 @@ Wrap the variable name in curly braces `{}`.
 
 ---
 
-## 📊 9. Reporting & Debugging
+## 📊 10. Reporting & Debugging
 The framework is designed to make debugging easy:
 1.  **Red Box Highlighting:** If a step fails, the report screenshot will show a **Red Border** around the specific element that failed.
 2.  **Video Logs:** Check `test-outputs/videos` for a full recording of the execution.
@@ -174,7 +195,7 @@ The framework is designed to make debugging easy:
 
 ---
 
-## 🔗 10. Cross-Sheet Dependencies (Preconditions)
+## 🔗 11. Cross-Sheet Dependencies (Preconditions)
 
 The framework supports **Recursive Dependencies**. If one test suite (Sheet) requires data or a state created in another sheet, you can link them directly within the Excel file.
 
@@ -197,7 +218,7 @@ In the **Precondition** column (Column 5) of the **very first test case row** (R
 
 ---
 
-## 🗄️ 11. Database Cleanup & Maintenance
+## 🗄️ 12. Database Cleanup & Maintenance
 
 This feature allows the framework to interact directly with the PostgreSQL database to remove test data after a suite finishes. This ensures your environment remains clean and prevents "Duplicate Entry" errors during repeated test runs.
 
@@ -245,7 +266,7 @@ Below are frequently used cleanup templates for various modules:
 
 ---
 
-## 🌍 12. Multi-Environment Configuration (CLI Support)
+## 🌍 13. Multi-Environment Configuration (CLI Support)
 
 The framework now supports **Dynamic Configuration Loading**. Instead of manually editing the `config.properties` file to switch between projects (e.g., ERP vs. WE1), you can maintain separate configuration files and trigger them via the command line.
 
