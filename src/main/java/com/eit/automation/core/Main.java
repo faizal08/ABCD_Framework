@@ -101,30 +101,62 @@ public class Main {
         }
     }
     /**
-     * Read test cases from Excel file - UPDATED TO HANDLE MULTIPLE SHEETS CORRECTLY
+     * Read test cases from Excel file - UPDATED TO SUPPORT SHEET REPEAT ITERATIONS [X]
      */
     private static void readExcelTestCases(String excelPath, ReportGenerator reportGenerator) throws Exception {
         String sheetNameConfig = config.getProperty("sheets.name");
-        String[] sheetNames = (sheetNameConfig != null) ? sheetNameConfig.split(",") : new String[0];
+        String[] rawSheetTokens = (sheetNameConfig != null) ? sheetNameConfig.split(",") : new String[0];
 
         try (FileInputStream fis = new FileInputStream(excelPath);
              Workbook workbook = new XSSFWorkbook(fis)) {
 
             if (executor == null) {
-                executor = new TestExecutor(reportGenerator,config);
+                executor = new TestExecutor(reportGenerator, config);
             }
 
-            for (String rawSheetName : sheetNames) {
-                runSheetWithPrecondition(rawSheetName.trim(), workbook, reportGenerator);
+            for (String token : rawSheetTokens) {
+                String cleanToken = token.trim();
+                if (cleanToken.isEmpty()) continue;
+
+                String sheetName = cleanToken;
+                int repeatCount = 1; // Default to 1 if no bracket configuration is provided
+
+                // Extract brackets pattern: e.g., "AddCustomer[50]"
+                if (cleanToken.contains("[") && cleanToken.endsWith("]")) {
+                    try {
+                        sheetName = cleanToken.substring(0, cleanToken.indexOf("[")).trim();
+                        String countStr = cleanToken.substring(cleanToken.indexOf("[") + 1, cleanToken.length() - 1).trim();
+                        repeatCount = Integer.parseInt(countStr);
+                    } catch (Exception e) {
+                        System.err.println("⚠️ Warning: Failed to parse iteration count for token '" + cleanToken + "'. Falling back to 1 loop.");
+                        sheetName = cleanToken.replace("[", "").replace("]", "").trim();
+                        repeatCount = 1;
+                    }
+                }
+
+                // Run the target sheet the exact number of times requested
+                System.out.println("\n🎯 Target Configuration Set: Sheet [" + sheetName + "] will iterate " + repeatCount + " time(s).");
+                for (int currentRun = 1; currentRun <= repeatCount; currentRun++) {
+                    System.out.println("\n========================================================");
+                    System.out.println("🔄 STRESS LOOP ATTEMPT #" + currentRun + " OF " + repeatCount + " FOR SHEET: [" + sheetName + "]");
+                    System.out.println("========================================================");
+
+                    // Force-remove the target sheet from execution tracking for this iteration pass
+                    // so it bypasses the recursion lock safely
+                    executedSheets.remove(sheetName);
+
+                    runSheetWithPrecondition(sheetName, workbook, reportGenerator);
+                }
             }
         }
     }
 
     /**
      * Logic to handle the Precondition column dependency recursively.
-     * Handles long descriptive text by searching for the "RunSheet:" keyword.
+     * Modified to preserve core configuration loops while safely isolating background dependencies.
      */
     private static void runSheetWithPrecondition(String sheetName, Workbook workbook, ReportGenerator reportGenerator) throws Exception {
+        // If it's a structural background dependency sheet that ran already, do not re-run it
         if (executedSheets.contains(sheetName)) return;
 
         Sheet sheet = workbook.getSheet(sheetName);
@@ -164,8 +196,11 @@ public class Main {
         }
 
         processSheetData(sheet, sheetName, reportGenerator);
+
+        // Add to tracking list to prevent background dependency duplication loops
         executedSheets.add(sheetName);
     }
+
     /**
      * The actual loop that runs the test cases in the sheet
      */
