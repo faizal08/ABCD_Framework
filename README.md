@@ -54,6 +54,24 @@ You can capture a generated value and reuse it in later steps using the `>>` ope
 2. **Reuse:** Use `{myUser}` in any following step to type the exact same name.
 
 ---
+
+## 🔄 Sheet-Level Iteration (Stress & Loop Testing)
+
+The framework supports **Dynamic Loop Execution** directly from your environment settings. If you need to stress-test a specific form, generate bulk test data, or repeatedly run a single test suite without restarting the browser or duplicating rows in Excel, you can define a repeat count using bracket notation `[X]`.
+
+### **How to Use**
+In your active `.properties` file, append the desired number of loops inside square brackets right next to the target sheet name in the `sheets.name` property.
+
+* **Syntax:** `SheetName[NumberOfLoops]`
+* **Default Behavior:** If no brackets are provided (e.g., `AddCityArea`), the framework automatically defaults to running the sheet exactly **1 time**.
+
+### **Properties Configuration Example:**
+```properties
+# This configuration will run AddCustomer 5 times, AddCityArea 1 time, and AddCityAdmin 50 times
+sheets.name=AddCustomer[5],AddCityArea,AddCityAdmin[50]
+```
+
+---
 ## 🚀 Advanced Execution (CLI)
 You can switch environments without modifying any configuration files by using the `-Denv` system property:
 

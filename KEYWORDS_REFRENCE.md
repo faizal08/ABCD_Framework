@@ -266,6 +266,26 @@ Below are frequently used cleanup templates for various modules:
 
 ---
 
+## 🔄 13. Sheet-Level Iteration (Stress & Loop Testing)
+
+The framework supports **Dynamic Loop Execution** directly from your environment settings. If you need to stress-test a specific form, generate bulk test data, or repeatedly run a single test suite without restarting the browser or duplicating rows in Excel, you can define a repeat count using bracket notation `[X]`.
+
+### **How to Use**
+In your active `.properties` file, append the desired number of loops inside square brackets right next to the target sheet name in the `sheets.name` property.
+
+* **Syntax:** `SheetName[NumberOfLoops]`
+* **Default Behavior:** If no brackets are provided (e.g., `AddCityArea`), the framework automatically defaults to running the sheet exactly **1 time**.
+
+### **Properties Configuration Example:**
+```properties
+
+# This configuration will run AddCustomer 5 times, AddCityArea 1 time, and AddCityAdmin 50 times
+sheets.name=AddCustomer[5],AddCityArea,AddCityAdmin[50]
+
+```
+
+---
+
 ## 🌍 13. Multi-Environment Configuration (CLI Support)
 
 The framework now supports **Dynamic Configuration Loading**. Instead of manually editing the `config.properties` file to switch between projects (e.g., ERP vs. WE1), you can maintain separate configuration files and trigger them via the command line.
