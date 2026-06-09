@@ -16,6 +16,9 @@
 
 ## 📖 Overview
 The **ABCD Framework** is designed to bridge the gap between manual testers and automation. By utilizing a **Keyword-Driven approach**, it allows test cases to be written in plain language (keywords) within external files, which the engine then translates into automated actions using Selenium WebDriver.
+The core philosophy is driven by the company motive: *"Any Body Can Develop"*—allowing even non-technical to build bulletproof automation scripts without writing code.
+
+![Framework Screenshot](framework_screenshot.png)
 
 ---
 

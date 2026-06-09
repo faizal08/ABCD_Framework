@@ -22,7 +22,46 @@ This document is the official reference for writing automated test cases. The `S
 
 ---
 
-## ⌨️ 2. Interactions & Input
+## 🚀 2. Centralized Element Mapper (Zero-Maintenance Sheets)
+
+To eliminate test maintenance fatigue when development teams update UI elements or application layouts, *never hardcode raw XPaths, IDs, or Automator expressions inside your Excel test sheets.* Instead, assign elements a standardized key name inside your centralized properties configuration. The framework's internal LocatorMapper engine automatically intercepts these keys at runtime, matches them to the real selectors, and handles execution seamlessly.
+
+> *💡 The Maintenance Advantage:* If a developer changes an element's XPath or Resource ID next week, you only modify it *once* in your .properties file. You do *not* have to edit or re-upload dozens of different Excel regression sheets.
+
+### 📋 Step 1: Define Elements in locator.properties
+Group your selectors cleanly by platform and module.
+
+```
+properties
+# =========================================================================
+# CENTRALIZED LOCATOR REPOSITORY (locator.properties)
+# =========================================================================
+
+# 💻 Web Admin Portal Elements
+admin.drivers.menu.icon=//i[contains(@class,'fa-motorcycle fa-solid iconstyle')]
+admin.drivers.fullname.input=//label[contains(.,'Full Name')]/following::input[1]
+admin.drivers.phone.input=//input[@type='tel']
+admin.drivers.profile_image.file=//input[@type='file']
+admin.drivers.submit.button=//button[contains(.,'Submit')]
+admin.drivers.success_toast.div=//div[@aria-label='Added Successfully']
+```
+
+### 📊 Setup in Excel Sheet
+Your Excel sheet stays clean, readable, and focused purely on business logic. Use the exact key names from your properties file in the *Target / Locator* column:
+
+| Step | Test Step Description | Action | Value | Target (Property Key Only) |
+| :--- | :--- | :--- | :--- | :--- |
+| *1* | Open Admin Panel | openurl | - | https://dev.we1.co/#/login |
+| *2* | Click Drivers Menu | click | - | *admin.drivers.menu.icon* |
+| *3* | Type Unique Name | type | Onboard_{randomAlpha} >> autoName | *admin.drivers.fullname.input* |
+| *4* | Type Unique Phone | type | 98{timestamp} >> driverPhone | *admin.drivers.phone.input* |
+| *5* | Attach Profile Photo | uploadfile | src/main/resources/test-data/driver.jpg | *admin.drivers.profile_image.file* |
+| *6* | Attach Vehicle Photo | uploadfile | src/main/resources/test-data/auto.jpg | *admin.drivers.vehicle_image.file* |
+| *7* | Click Save Record | click | - | *admin.drivers.submit.button* |
+
+---
+
+## ⌨️ 3. Interactions & Input
 
 | Action | Phrase Examples (Natural Language) | Description |
 | :--- | :--- | :--- |
@@ -44,7 +83,7 @@ This document is the official reference for writing automated test cases. The `S
 
 ---
 
-## 📁 3. File Uploads & System Tools
+## 📁 4. File Uploads & System Tools
 
 | Action | Phrase Examples (Natural Language) | Description |
 | :--- | :--- | :--- |
@@ -61,7 +100,7 @@ This document is the official reference for writing automated test cases. The `S
 
 ---
 
-## 🔍 4. Verification & Assertions
+## 🔍 5. Verification & Assertions
 
 | Action | Phrase Examples (Natural Language) | Description |
 | :--- | :--- | :--- |
@@ -81,7 +120,7 @@ This document is the official reference for writing automated test cases. The `S
 
 ---
 
-## 🛡️ 5. Advanced Presence Assertions (Negative Testing)
+## 🛡️ 6. Advanced Presence Assertions (Negative Testing)
 
 These keywords allow you to perform strict validation on whether an element should or should not exist in the DOM. This is particularly useful for verifying **Role-Based Access Control (RBAC)** where certain menus must be hidden from specific users.
 
@@ -102,7 +141,7 @@ These keywords allow you to perform strict validation on whether an element shou
 ---
 
 
-## ⏳ 6. Explicit Waits & Toasts
+## ⏳ 7. Explicit Waits & Toasts
 
 | Action | Phrase Examples (Natural Language) | Description |
 | :--- | :--- | :--- |
@@ -121,7 +160,7 @@ These keywords allow you to perform strict validation on whether an element shou
 
 ---
 
-## 🖱️ 7. Scrolling, Frames & Maps
+## 🖱️ 8. Scrolling, Frames & Maps
 
 | Action | Phrase Examples (Natural Language) | Description |
 | :--- | :--- | :--- |
@@ -140,7 +179,7 @@ These keywords allow you to perform strict validation on whether an element shou
 
 ---
 
-## 🎲 8. Dynamic Placeholders (Value Column)
+## 🎲 9. Dynamic Placeholders (Value Column)
 
 | Placeholder | Result Example | Best For |
 | :--- | :--- | :--- |
@@ -159,7 +198,7 @@ These keywords allow you to perform strict validation on whether an element shou
 
 ---
 
-## 💾 9. Save & Reuse Logic
+## 💾 10. Save & Reuse Logic
 
 Capture a value in one step to use it in a later step.
 
@@ -187,7 +226,7 @@ Wrap the variable name in curly braces `{}`.
 
 ---
 
-## 📊 10. Reporting & Debugging
+## 📊 11. Reporting & Debugging
 The framework is designed to make debugging easy:
 1.  **Red Box Highlighting:** If a step fails, the report screenshot will show a **Red Border** around the specific element that failed.
 2.  **Video Logs:** Check `test-outputs/videos` for a full recording of the execution.
@@ -195,7 +234,7 @@ The framework is designed to make debugging easy:
 
 ---
 
-## 🔗 11. Cross-Sheet Dependencies (Preconditions)
+## 🔗 12. Cross-Sheet Dependencies (Preconditions)
 
 The framework supports **Recursive Dependencies**. If one test suite (Sheet) requires data or a state created in another sheet, you can link them directly within the Excel file.
 
@@ -218,7 +257,7 @@ In the **Precondition** column (Column 5) of the **very first test case row** (R
 
 ---
 
-## 🗄️ 12. Database Cleanup & Maintenance
+## 🗄️ 13. Database Cleanup & Maintenance
 
 This feature allows the framework to interact directly with the PostgreSQL database to remove test data after a suite finishes. This ensures your environment remains clean and prevents "Duplicate Entry" errors during repeated test runs.
 
@@ -266,7 +305,7 @@ Below are frequently used cleanup templates for various modules:
 
 ---
 
-## 🔄 13. Sheet-Level Iteration (Stress & Loop Testing)
+## 🔄 14. Sheet-Level Iteration (Stress & Loop Testing)
 
 The framework supports **Dynamic Loop Execution** directly from your environment settings. If you need to stress-test a specific form, generate bulk test data, or repeatedly run a single test suite without restarting the browser or duplicating rows in Excel, you can define a repeat count using bracket notation `[X]`.
 
@@ -286,7 +325,7 @@ sheets.name=AddCustomer[5],AddCityArea,AddCityAdmin[50]
 
 ---
 
-## 🌍 13. Multi-Environment Configuration (CLI Support)
+## 🌍 15. Multi-Environment Configuration (CLI Support)
 
 The framework now supports **Dynamic Configuration Loading**. Instead of manually editing the `config.properties` file to switch between projects (e.g., ERP vs. WE1), you can maintain separate configuration files and trigger them via the command line.
 
