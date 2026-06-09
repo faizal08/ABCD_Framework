@@ -3,7 +3,7 @@ package com.eit.automation.core;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+import java.util.*;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
@@ -25,9 +25,6 @@ import com.eit.automation.actions.WaitActions;
 import com.eit.automation.parser.TestStep;
 import com.eit.automation.utils.ReportGenerator;
 import com.eit.automation.utils.DatabaseUtils;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
 
 public class TestExecutor {
 
@@ -239,13 +236,74 @@ public class TestExecutor {
 	/**
 	 * Execute list of test steps WITHOUT test case name
 	 */
-	public boolean run(List<TestStep> steps) {
-		return run("Default", steps, "Unnamed Test Case"); // Added "Default" as the first argument
-	}
-	/**
-	 * Execute single test step - NEVER THROWS, JUST LOGS ERRORS
-	 */
 	private void executeStep(TestStep step) throws Exception {
+		if (step == null) return;
+
+		// 🚀 MASTER CENTRAL INTERCEPTOR: Safe Property Extraction (Web Optimized)
+		if (step.getXpath() != null) {
+			step.setXpath(step.getXpath().replace("\"", "").trim());
+		}
+		if (step.getValue() != null) {
+			step.setValue(step.getValue().replace("\"", "").trim());
+		}
+		if (step.getContext() != null) {
+			step.setContext(step.getContext().replace("\"", "").trim());
+		}
+
+		// 1. GENERIC STRUCTURE EXTRACTOR FOR UPLOAD ACTIONS
+		// Fully hybrid optimized: Dynamically isolates direct raw XPaths from valid file paths
+		if (step.getAction() != null && step.getAction().equalsIgnoreCase("uploadfile")) {
+
+			String fileTarget = null;
+			String locatorKeyTarget = null;
+
+			List<String> textPool = new ArrayList<>();
+			if (step.getValue() != null && !step.getValue().isEmpty()) textPool.add(step.getValue());
+			if (step.getXpath() != null && !step.getXpath().isEmpty()) textPool.add(step.getXpath());
+			if (step.getContext() != null && !step.getContext().isEmpty()) textPool.add(step.getContext());
+
+			for (String text : textPool) {
+				// If it explicitly starts with XPath indicators, it's definitely the locator, not a file path
+				if (text.startsWith("//") || text.startsWith("(")) {
+					locatorKeyTarget = text;
+				}
+				// Otherwise, check if it contains path separators to classify it as a file target
+				else if (text.contains("/") || text.contains("\\")) {
+					fileTarget = text;
+				}
+				// Pure fallback text tokens are assigned to locator keys (property file keys)
+				else {
+					locatorKeyTarget = text;
+				}
+			}
+
+			if (locatorKeyTarget != null) {
+				step.setXpath(locatorKeyTarget);
+			}
+			if (fileTarget != null) {
+				step.setValue(fileTarget);
+			}
+
+			log("  🔀 INTERCEPTOR: Web Upload structural pool alignment complete. Key: [" + step.getXpath() + "], Path: [" + step.getValue() + "]");
+		}
+
+		// 2. Resolve Custom Web Element Mappings from Properties File Maps
+		// Skip resolution if it is a raw direct XPath expression
+		if (step.getXpath() != null && !step.getXpath().isEmpty() && !step.getXpath().startsWith("//") && !step.getXpath().startsWith("(")) {
+			String resolvedXpath = com.eit.automation.core.LocatorMapper.getXPath(step.getXpath());
+			step.setXpath(resolvedXpath);
+		}
+
+		// 3. Resolve Value Parameters properties files maps matching rules (Skips asset system paths and raw XPaths)
+		if (step.getValue() != null && !step.getValue().isEmpty()
+				&& !step.getValue().contains("/") && !step.getValue().contains("\\")
+				&& !step.getValue().startsWith("//") && !step.getValue().startsWith("(")) {
+			String resolvedValue = com.eit.automation.core.LocatorMapper.getXPath(step.getValue());
+			step.setValue(resolvedValue);
+		}
+		// 🚀 MASTER CENTRAL INTERCEPTOR END
+
+		// --- Continue with your original framework extraction logic ---
 		String action = step.getAction().toLowerCase();
 		String value = step.getValue();
 		String xpath = step.getXpath();
@@ -253,17 +311,15 @@ public class TestExecutor {
 
 		log("  ⚙ Action: " + action.toUpperCase());
 
-		/*// HOTFIX: Override file upload path with user provided path
-		if ((action.equals("uploadfile") || action.equals("robotupload")) && value != null) {
-			log("  ⚠ HOTFIX: Overriding file path with 'C:\\Vehicle Image\\Auto.jpg'");
-			value = "C:\\Vehicle Image\\Auto.jpg";
-		}*/
+    /*// HOTFIX: Override file upload path with user provided path
+    if ((action.equals("uploadfile") || action.equals("robotupload")) && value != null) {
+       log("  ⚠ HOTFIX: Overriding file path with 'C:\\Vehicle Image\\Auto.jpg'");
+       value = "C:\\Vehicle Image\\Auto.jpg";
+    }*/
 
-		// 1. PAGEFACTORY LOOKUP (If XPath is empty, try to match value/context to a
-		// Page Object field)
+		// 1. PAGEFACTORY LOOKUP (If XPath is empty, try to match value/context to a Page Object field)
 		if ((xpath == null || xpath.isEmpty()) && (value != null && !value.isEmpty())) {
 			if (pageObjectManager != null) {
-
 				WebElement element = pageObjectManager.findElementByName(value);
 				if (element != null) {
 					log("  → Found PageFactory Element: " + value);
@@ -275,7 +331,6 @@ public class TestExecutor {
 		if (xpath == null || xpath.isEmpty()) {
 			if (value != null && !value.isEmpty()) {
 
-				// --- ADDED THIS CHECK ---
 				// Detect if the value is actually an XPath string instead of a label
 				boolean isDirectXPath = value.startsWith("//") || value.startsWith("(");
 
@@ -299,6 +354,11 @@ public class TestExecutor {
 		if ((xpath == null || xpath.isEmpty()) && (value == null || value.isEmpty())) {
 			log("  ⚠ Both XPath and Value empty - skipping");
 		}
+
+		// Synchronize local tracking modifications back to master TestStep object reference
+		step.setXpath(xpath);
+		step.setValue(value);
+
 		switch (action) {
 			case "openurl":
 			case "navigate":
